@@ -1,0 +1,41 @@
+[
+    {
+        "id": "duna-2",
+        "titulo": "Duna: Parte Dos",
+        "poster": "/favicon.ico",
+        "duracion": 166,
+        "clasificacion": "PG-13",
+        "sinopsis": "Paul busca venganza mientras se une a los Fremen para evitar un futuro terrible.",
+        "horarios": [
+            "15:00",
+            "18:30",
+            "21:15"
+        ]
+    },
+    {
+        "id": "oppenheimer",
+        "titulo": "Oppenheimer",
+        "poster": "/favicon.ico",
+        "duracion": 180,
+        "clasificacion": "PG-13",
+        "sinopsis": "La historia del padre de la bomba atómica.",
+        "horarios": [
+            "14:00",
+            "17:30",
+            "20:50"
+        ]
+    },
+    {
+        "id": "intensamente-2",
+        "titulo": "Intensamente 2",
+        "poster": "/favicon.ico",
+        "duracion": 96,
+        "clasificacion": "PG",
+        "sinopsis": "Nuevas emociones llegan a la mente de Riley en su adolescencia.",
+        "horarios": [
+            "13:30",
+            "16:10",
+            "19:00"
+        ]
+    }
+]

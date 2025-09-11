@@ -1,6 +1,7 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   srcDir: '.',
+  ssr: false,
   modules: ['@nuxtjs/tailwindcss', '@pinia/nuxt', '@vite-pwa/nuxt'],
   tailwindcss: { viewer: false },
   css: ['~/assets/css/tailwind.css'],
@@ -19,10 +20,14 @@ export default defineNuxtConfig({
       ]
     }
   },
+  runtimeConfig: {
+    mongodbUri: process.env.MONGODB_URI || '', // solo servidor
+  },
   app: {
     head: {
       title: 'Cine al Parque',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }]
     }
   }
+
 })
