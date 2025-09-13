@@ -21,7 +21,8 @@ export default defineNuxtConfig({
     }
   },
   runtimeConfig: {
-    mongodbUri: process.env.MONGODB_URI || '', // solo servidor
+    mongodbUri: process.env.MONGODB_URI || '',
+    public: {}
   },
   app: {
     head: {
