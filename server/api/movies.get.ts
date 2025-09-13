@@ -3,6 +3,6 @@ import { Movie } from '@/server/models/Movie'
 
 export default defineEventHandler(async () => {
     await connectDB()
-    const movies = await Movie.find().sort({ createdAt: -1 }).lean()
-    return movies
+    const items = await Movie.find({ active: true }).sort({ createdAt: -1 }).lean()
+    return items
 })

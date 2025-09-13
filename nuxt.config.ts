@@ -23,6 +23,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     mongodbUri: process.env.MONGODB_URI || '',
     authSecret: process.env.AUTH_SECRET || '',
+    adminEmails: process.env.NUXT_ADMIN_EMAILS || '',
     public: {}
   },
   app: {
