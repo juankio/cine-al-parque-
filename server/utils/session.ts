@@ -26,7 +26,7 @@ export async function createSession(event: H3Event, payload: { id: string, name:
     setCookie(event, COOKIE_NAME, token, COOKIE_OPTIONS)
 }
 
-export function clearSession(event: H3Event) {
+export function destroySession(event: H3Event) {
     deleteCookie(event, COOKIE_NAME, { path: '/' })
 }
 
