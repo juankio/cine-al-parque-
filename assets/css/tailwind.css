@@ -1,3 +1,52 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Soporte de tema del SO (dark/light) */
+:root { color-scheme: light dark; }
+
+/* ---------- Base ---------- */
+@layer base {
+  html, body { @apply h-full; }
+  body { @apply antialiased bg-white text-gray-900 dark:bg-gray-900 dark:text-white; }
+  a { @apply underline-offset-2; }
+}
+
+/* Scrollbar sutil */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { border-radius: 9999px; background: rgba(120,120,120,.5); }
+
+/* ---------- Animaciones ---------- */
+@keyframes pulse-slow { 0%,100% { opacity: 1 } 50% { opacity: .6 } }
+.animate-pulse-slow { animation: pulse-slow 2.5s ease-in-out infinite }
+
+/* ---------- Componentes reutilizables ---------- */
+@layer components {
+  /* Botones */
+  .btn { @apply inline-flex items-center justify-center gap-2 px-3 py-1 rounded-xl text-sm font-semibold transition; }
+  .btn-primary { @apply btn bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow; }
+  .btn-outline { @apply btn border border-white/10 hover:bg-gray-900/5 dark:hover:bg-white/10; }
+  .btn-danger { @apply btn bg-red-600 text-white hover:brightness-110; }
+
+  /* Chips/Badges */
+  .chip { @apply inline-flex items-center px-2 py-0.5 rounded-lg text-xs border border-white/10; }
+  .badge { @apply chip bg-gray-900 text-white dark:bg-white dark:text-gray-900; }
+
+  /* Cards / Contenedores */
+  .card { @apply rounded-2xl border border-white/10 bg-white/60 dark:bg-gray-800/60 backdrop-blur; }
+  .card-body { @apply p-4; }
+  .card-title { @apply text-lg font-bold; }
+  .card-sub { @apply text-sm opacity-80; }
+
+  /* Inputs */
+  .input { @apply w-full rounded-xl border border-white/10 bg-transparent px-3 py-2 outline-none focus:ring-2 focus:ring-black/10 dark:focus:ring-white/20; }
+
+  /* Nav links */
+  .nav-link { @apply px-3 py-1 rounded-xl hover:bg-gray-900/5 dark:hover:bg-white/10 text-sm transition; }
+  .nav-link-active { @apply bg-gray-900/90 text-white dark:bg-white dark:text-gray-900; }
+}
+
+/* ---------- Utilidades extra ---------- */
+@layer utilities {
+  .shadow-soft { box-shadow: 0 10px 30px rgba(0,0,0,.10); }
+}

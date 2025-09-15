@@ -1,31 +1,18 @@
 <script setup>
-defineProps({
-  movie: { type: Object, required: true }
+const props = defineProps({
+  movie: { type: Object, required: true } // { id, title, time, rating, poster }
 })
 </script>
 
 <template>
-  <article class="rounded-2xl overflow-hidden border border-white/10 bg-gray-800/60">
-    <NuxtLink :to="`/pelicula/${movie.id}`" class="block">
-      <img :src="movie.poster" :alt="movie.titulo" class="w-full h-64 object-cover">
-
-    </NuxtLink>
-    <div class="p-4 space-y-2">
-      <h3 class="font-semibold text-lg">
-        <NuxtLink :to="`/pelicula/${movie.id}`">{{ movie.titulo }}</NuxtLink>
-      </h3>
-      <p class="text-xs text-gray-400">
-        {{ movie.clasificacion }} • {{ movie.duracion }} min
-      </p>
-      <div class="flex flex-wrap gap-2">
-        <NuxtLink
-          v-for="h in movie.horarios"
-          :key="h"
-          class="px-2 py-1 rounded bg-white text-gray-900 text-xs"
-          :to="`/sala?movie=${movie.id}&hora=${encodeURIComponent(h)}`"
-        >
-          Reservar {{ h }}
-        </NuxtLink>
+  <article class="rounded-2xl overflow-hidden border border-white/10 bg-white/60 dark:bg-gray-800/60 backdrop-blur">
+    <img :src="movie.poster" :alt="movie.title" class="w-full aspect-[3/4] object-cover">
+    <div class="p-4">
+      <h3 class="font-bold text-lg">{{ movie.title }}</h3>
+      <p class="text-sm opacity-80">{{ movie.time }} · {{ movie.rating }}</p>
+      <div class="mt-3 flex gap-2">
+        <NuxtLink :to="`/sala?movie=${movie.id}`" class="px-3 py-1 rounded-xl bg-gray-900 text-white dark:bg-white dark:text-gray-900">Reservar</NuxtLink>
+        <NuxtLink :to="`/admin?movie=${movie.id}`" class="px-3 py-1 rounded-xl border border-white/10">Admin</NuxtLink>
       </div>
     </div>
   </article>

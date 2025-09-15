@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   srcDir: '.',
   ssr: false,
-  modules: ['@nuxtjs/tailwindcss', '@pinia/nuxt', '@vite-pwa/nuxt'],
+  modules: ['@nuxtjs/tailwindcss', '@pinia/nuxt', '@vite-pwa/nuxt', '@nuxtjs/color-mode'],
   tailwindcss: { viewer: false },
   css: ['~/assets/css/tailwind.css'],
   pwa: {
@@ -32,6 +32,12 @@ export default defineNuxtConfig({
       title: 'Cine al Parque',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }]
     }
+  },
+  colorMode: {
+    classSuffix: '',        // usa .dark en <html>
+    preference: 'system',
+    fallback: 'light',
+    storageKey: 'cine-color-scheme'
   }
 
 })
