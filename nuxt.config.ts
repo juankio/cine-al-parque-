@@ -24,6 +24,7 @@ export default defineNuxtConfig({
     mongodbUri: process.env.MONGODB_URI || '',
     authSecret: process.env.AUTH_SECRET || '',
     adminEmails: process.env.NUXT_ADMIN_EMAILS || '',
+    holdsTtlMinutes: process.env.HOLDS_TTL_MIN || '10',
     public: {}
   },
   app: {
