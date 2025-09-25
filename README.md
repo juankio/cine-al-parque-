@@ -2,6 +2,10 @@
 
 Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
 
+## Project Docs
+
+- API routes & flows: `docs/api-routes.md`
+
 ## Setup
 
 Make sure to install dependencies:
