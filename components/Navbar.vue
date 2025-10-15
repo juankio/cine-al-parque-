@@ -1,68 +1,42 @@
-<script setup>
-import { computed, ref } from 'vue'
-import ThemeToggle from "~/components/ThemeToggle.vue"
-
-const links = [
-  { to: '/', label: 'Cartelera' },
-  { to: '/sala', label: 'Sala' },
-  { to: '/admin', label: 'Admin' }
-]
-
-const router = useRouter()
-const { user, isAuthenticated, isLoading, logout } = useAuth()
-const loggingOut = ref(false)
-
-const displayName = computed(() => user.value?.name || user.value?.email || '')
-
-const loginLabel = computed(() => (isLoading.value ? '...' : 'Iniciar sesion'))
-
-const handleLogout = async () => {
-  if (loggingOut.value) return
-  loggingOut.value = true
-  try {
-    await logout()
-    await router.push('/')
-  } catch (err) {
-    console.error('Error al cerrar sesion', err)
-  } finally {
-    loggingOut.value = false
-  }
-}
-</script>
-
 <template>
-  <header class="sticky top-0 z-50 border-b border-white/10 backdrop-blur bg-white/60 dark:bg-gray-900/60">
-    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center gap-4 justify-between">
-      <NuxtLink to="/" class="flex items-center gap-2 group">
-        <div class="w-9 h-9 rounded-2xl bg-brand/90 text-white grid place-items-center shadow-[0_10px_30px_rgba(0,0,0,.10)]">YZ</div>
-        <span class="text-lg font-extrabold tracking-tight select-none">
-          <span class="animate-pulse-slow text-brand">Cine</span> al Parque
+  <header class="sticky top-0 z-40 border-b border-theme bg-surface/80 backdrop-blur">
+    <nav class="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4">
+      <NuxtLink to="/" class="flex items-center gap-2">
+        <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-brand/20 text-sm font-bold text-brand">
+          🎬
         </span>
+        <span class="text-sm font-semibold tracking-wide text-foreground">Cine al Parque</span>
       </NuxtLink>
 
-      <nav class="hidden sm:flex gap-1 text-sm">
-        <NuxtLink v-for="l in links" :key="l.to" :to="l.to"
-          class="px-3 py-1 rounded-xl hover:bg-gray-900/5 dark:hover:bg-white/10 transition"
-          active-class="bg-gray-900/90 text-white dark:bg-white dark:text-gray-900">
-          {{ l.label }}
-        </NuxtLink>
-      </nav>
-
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
         <ThemeToggle />
-        <NuxtLink to="/sala" class="hidden sm:inline-flex px-3 py-1 rounded-xl bg-brand text-white font-semibold">Reservar</NuxtLink>
-        <template v-if="isAuthenticated">
-          <span class="hidden sm:inline text-sm font-semibold truncate max-w-[140px]" :title="displayName">
-            Hola, {{ displayName }}
+
+        <template v-if="me">
+          <span class="hidden sm:inline-block rounded-lg bg-brand/10 px-2.5 py-1 text-xs text-foreground" :title="me.email">
+            {{ me.email }}
           </span>
-          <button class="btn btn-outline" type="button" :disabled="loggingOut" @click="handleLogout">
-            {{ loggingOut ? 'Saliendo...' : 'Salir' }}
+          <NuxtLink v-if="me.isAdmin" to="/admin"
+            class="rounded-lg px-2.5 py-1 text-xs font-medium text-brand hover:bg-brand/10">
+            Admin
+          </NuxtLink>
+          <button @click="logout" class="rounded-lg px-2.5 py-1 text-xs font-medium text-red-400 hover:bg-red-500/10">
+            Salir
           </button>
         </template>
-        <NuxtLink v-else class="btn btn-primary" to="/login">
-          {{ loginLabel }}
-        </NuxtLink>
+
+        <template v-else>
+          <NuxtLink to="/login" class="rounded-lg px-2.5 py-1 text-xs font-medium text-brand hover:bg-brand/10">
+            Entrar
+          </NuxtLink>
+        </template>
       </div>
-    </div>
+    </nav>
   </header>
 </template>
+
+<script setup lang="ts">
+import ThemeToggle from '~/components/ThemeToggle.vue'
+const { user, logout, fetchMe } = useAuth()
+const me = computed(() => user.value ?? null)
+onMounted(() => { if (!user.value) fetchMe().catch(() => {}) })
+</script>

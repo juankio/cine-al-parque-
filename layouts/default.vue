@@ -1,16 +1,12 @@
-<script setup>
-import Navbar from "~/components/Navbar.vue"
-import FooterBar from "~/components/FooterBar.vue"
-</script>
 
 <template>
-  <div class="min-h-dvh grid grid-rows-[auto,1fr,auto]">
+  <div class="min-h-screen bg-surface text-foreground">
     <Navbar />
-
-    <main class="max-w-6xl mx-auto w-full px-6 py-8">
+    <main class="mx-auto w-full max-w-6xl px-4 py-8">
       <slot />
     </main>
-
-    <FooterBar />
   </div>
 </template>
+<script setup lang="ts">
+import Navbar from '~/components/Navbar.vue'
+</script>
