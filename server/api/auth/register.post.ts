@@ -1,26 +1,37 @@
-import { connectDB } from '@/server/utils/mongoose'
-import { User } from '@/server/models/User'
-import { hashPassword } from '@/server/utils/hash'
-import { createSession } from '@/server/utils/session'
+import { createError, readBody } from 'h3'
+import bcrypt from 'bcrypt'
+import { usersCol } from '~/server/utils/db'
+import { createSession } from '~/server/utils/auth'
+
+function parseAdminEmails(s: string) {
+    return (s || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean)
+}
 
 export default defineEventHandler(async (event) => {
-    await connectDB()
+    const { adminEmails } = useRuntimeConfig()
+    const allowAdmins = parseAdminEmails(adminEmails)
 
-    const body = await readBody<{ name?: string, email?: string, password?: string }>(event)
-    const name = (body.name || '').trim()
-    const email = (body.email || '').trim().toLowerCase()
-    const password = body.password || ''
+    const body = await readBody<{ name?: string; email?: string; password?: string }>(event)
+    const name = (body?.name || '').trim()
+    const email = (body?.email || '').trim().toLowerCase()
+    const password = String(body?.password || '')
 
-    if (!name || !email || !password) {
-        throw createError({ statusCode: 400, statusMessage: 'Faltan campos' })
-    }
+    if (!name) throw createError({ statusCode: 400, message: 'Nombre requerido' })
+    if (!email || !/.+@.+\..+/.test(email)) throw createError({ statusCode: 400, message: 'Correo inválido' })
+    if (password.length < 6) throw createError({ statusCode: 400, message: 'La contraseña debe tener al menos 6 caracteres' })
 
-    const exists = await User.findOne({ email }).lean()
-    if (exists) throw createError({ statusCode: 409, statusMessage: 'Correo ya registrado' })
+    const col = await usersCol()
+    const existing = await col.findOne({ email }, { projection: { _id: 1 } })
+    if (existing) throw createError({ statusCode: 409, message: 'El correo ya está registrado' })
 
-    const passwordHash = await hashPassword(password)
-    const doc = await User.create({ name, email, passwordHash })
+    const passwordHash = await bcrypt.hash(password, 10)
+    const isAdmin = allowAdmins.includes(email)
+    const now = new Date()
 
-    await createSession(event, { id: String(doc._id), name: doc.name, email: doc.email })
-    return { ok: true, user: { id: String(doc._id), name: doc.name, email: doc.email } }
+    const insertRes = await col.insertOne({ name, email, passwordHash, isAdmin, createdAt: now, updatedAt: now })
+    const userId = String(insertRes.insertedId)
+
+    createSession(event, { sub: userId, email, isAdmin, name }, false)
+
+    return { ok: true, user: { id: userId, name, email, isAdmin } }
 })

@@ -4,18 +4,8 @@ export interface User {
   isAdmin?: boolean
   name?: string
 }
-
-export interface AuthLoginInput {
-  email: string
-  password: string
-  remember?: boolean
-}
-
-export interface AuthRegisterInput {
-  name: string
-  email: string
-  password: string
-}
+export interface AuthLoginInput { email: string; password: string; remember?: boolean }
+export interface AuthRegisterInput { name: string; email: string; password: string }
 
 export const useAuth = () => {
   const user = useState<User | null>('auth.user', () => null)
@@ -25,9 +15,8 @@ export const useAuth = () => {
   const fetchMe = async (): Promise<User | null> => {
     try {
       loading.value = true
-      const res = await $fetch<{ authenticated?: boolean; user?: User }>('/api/auth/me', {
-        credentials: 'include'
-      })
+      const res = await $fetch<{ authenticated?: boolean; user?: User }>('/api/auth/me', { credentials: 'include' })
+      console.log('[useAuth] /me', res)
       user.value = res?.user ?? null
       return user.value
     } catch {
@@ -41,34 +30,24 @@ export const useAuth = () => {
   const login = async ({ email, password, remember = false }: AuthLoginInput): Promise<User> => {
     error.value = null
     loading.value = true
+    console.log('[login] start', { email, remember })
     try {
       const res = await $fetch<{ ok: boolean; user?: User }>('/api/auth/login', {
-        method: 'POST',
-        credentials: 'include',
-        body: { email, password, remember }
+        method: 'POST', credentials: 'include', body: { email, password, remember }
       })
+      console.log('[login] response', res)
       const me = res?.user
-      if (!me) throw new Error('Login fallido')
+      if (!me) throw new Error('Login fallido (sin user)')
       user.value = me
       if (remember) localStorage.setItem('cine.user.email', email)
-
-      // Sugerir guardado al navegador (opcional, no rompe si no existe)
-      try {
-        // @ts-ignore
-        if ('credentials' in navigator && window.PasswordCredential) {
-          // @ts-ignore
-          const cred = new PasswordCredential({ id: email, password })
-          // @ts-ignore
-          await navigator.credentials.store(cred)
-        }
-      } catch { }
-
       return me
     } catch (e: any) {
+      console.error('[login] error', e)
       error.value = e?.data?.message || e?.message || 'Error de autenticación'
       throw e
     } finally {
       loading.value = false
+      console.log('[login] end')
     }
   }
 
@@ -77,9 +56,7 @@ export const useAuth = () => {
     loading.value = true
     try {
       const res = await $fetch<{ ok: boolean; user?: User }>('/api/auth/register', {
-        method: 'POST',
-        credentials: 'include',
-        body: input
+        method: 'POST', credentials: 'include', body: input
       })
       const me = res?.user
       if (!me) throw new Error('Registro fallido')

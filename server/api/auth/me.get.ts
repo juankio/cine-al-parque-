@@ -2,14 +2,8 @@ import { getSessionFromCookie } from '~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
     const session = getSessionFromCookie(event)
-    if (!session) {
-        return { authenticated: false, user: null }
-    }
-
-    // Opcional: refrescar datos desde DB si necesitas algo más fresco:
-    // const user = await UserModel.findById(session.sub).lean()
-    // if (!user) return { authenticated: false, user: null }
-
+    console.log('[API me] session?', !!session, session?.email)
+    if (!session) return { authenticated: false, user: null }
     return {
         authenticated: true,
         user: {

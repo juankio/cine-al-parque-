@@ -5,52 +5,27 @@
       <p class="text-sm text-neutral-500 dark:text-neutral-400">Cine al Parque</p>
     </div>
 
-    <!-- 🚀 Lo importante: autocomplete="on" + name="email"/"password" -->
     <form autocomplete="on" @submit.prevent="onSubmit" class="space-y-4">
       <div>
         <label for="email" class="block text-sm font-medium mb-1">Correo</label>
-        <input
-          id="email"
-          name="email"
-          v-model.trim="email"
-          type="email"
-          inputmode="email"
-          autocomplete="email"
-          required
-          class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground focus:outline-none focus:ring"
-        />
+        <input id="email" name="email" v-model.trim="email" type="email" inputmode="email" autocomplete="email" required
+               class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground focus:outline-none focus:ring"/>
       </div>
-
       <div>
         <label for="password" class="block text-sm font-medium mb-1">Contraseña</label>
-        <input
-          id="password"
-          name="password"
-          v-model="password"
-          :type="show ? 'text' : 'password'"
-          autocomplete="current-password"
-          required
-          class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground focus:outline-none focus:ring"
-        />
-        <button
-          type="button"
-          @click="show = !show"
-          class="text-xs mt-1 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-        >
+        <input id="password" name="password" v-model="password" :type="show ? 'text' : 'password'"
+               autocomplete="current-password" required
+               class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground focus:outline-none focus:ring"/>
+        <button type="button" @click="show = !show" class="text-xs mt-1 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
           {{ show ? 'Ocultar' : 'Ver' }} contraseña
         </button>
       </div>
 
       <label class="inline-flex items-center gap-2 text-sm">
-        <input type="checkbox" v-model="remember" class="rounded" />
-        Recuérdame
+        <input type="checkbox" v-model="remember" class="rounded" /> Recuérdame
       </label>
 
-      <button
-        :disabled="loading"
-        type="submit"
-        class="w-full rounded-xl py-2 font-semibold bg-brand text-white disabled:opacity-60"
-      >
+      <button :disabled="loading" type="submit" class="w-full rounded-xl py-2 font-semibold bg-brand text-white disabled:opacity-60">
         <span v-if="!loading">Entrar</span>
         <span v-else>Cargando…</span>
       </button>
@@ -75,7 +50,7 @@ definePageMeta({ layout: 'auth' })
 
 const router = useRouter()
 const route = useRoute()
-const { login, loading, error } = useAuth()
+const { user, login, loading, error } = useAuth()
 
 const email = ref('')
 const password = ref('')
@@ -83,8 +58,41 @@ const remember = ref(false)
 const show = ref(false)
 const errMsg = computed(() => (typeof error.value === 'string' ? error.value : ''))
 
-onMounted(() => {
-  // autocompletado recordado manualmente (no obligatorio)
+// --- helper: sanitiza y resuelve redirect seguro ---
+function decodeLoop(val: string, max = 5) {
+  let out = val
+  for (let i = 0; i < max; i++) {
+    const dec = decodeURIComponent(out)
+    if (dec === out) break
+    out = dec
+  }
+  return out
+}
+
+function resolveRedirect(raw: unknown): string {
+  let r = Array.isArray(raw) ? raw[0] : (raw as string | undefined)
+  if (!r) return '/'
+  r = decodeLoop(r)
+
+  // solo rutas internas
+  if (!r.startsWith('/')) return '/'
+
+  // evita volver al login
+  if (r.startsWith('/login')) return '/'
+
+  // por seguridad, evita rutas absurdamente largas
+  if (r.length > 1024) return '/'
+
+  return r
+}
+
+onMounted(async () => {
+  // Si ya estamos logueados y estamos en /login, vete al destino (o /)
+  if (user.value) {
+    const dest = resolveRedirect(route.query.redirect)
+    router.replace(dest)
+    return
+  }
   try {
     const hint = localStorage.getItem('cine.user.email')
     if (hint) email.value = hint
@@ -93,13 +101,14 @@ onMounted(() => {
 
 const onSubmit = async () => {
   const v = validateLogin(email.value, password.value)
-  if (v) return alert(v)
+  if (v) { alert(v); return }
+
   try {
     await login({ email: email.value, password: password.value, remember: remember.value })
-
-    // Cuando el login tiene éxito, el navegador detecta esto y ofrecerá guardar la contraseña
-    const redirect = (route.query.redirect as string) || '/'
-    router.push(redirect)
+    const dest = resolveRedirect(route.query.redirect)
+    // usa replace para no dejar /login en el history
+    await router.replace(dest)
   } catch {}
 }
 </script>
+
