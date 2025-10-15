@@ -11,6 +11,12 @@ export interface AuthLoginInput {
   remember?: boolean
 }
 
+export interface AuthRegisterInput {
+  name: string
+  email: string
+  password: string
+}
+
 export const useAuth = () => {
   const user = useState<User | null>('auth.user', () => null)
   const loading = useState<boolean>('auth.loading', () => false)
@@ -19,13 +25,12 @@ export const useAuth = () => {
   const fetchMe = async (): Promise<User | null> => {
     try {
       loading.value = true
-      // ✅ Usa $fetch para llamadas imperativas (client) y también sirve en server
       const res = await $fetch<{ authenticated?: boolean; user?: User }>('/api/auth/me', {
-        credentials: 'include',
+        credentials: 'include'
       })
       user.value = res?.user ?? null
       return user.value
-    } catch (e) {
+    } catch {
       user.value = null
       return null
     } finally {
@@ -37,11 +42,10 @@ export const useAuth = () => {
     error.value = null
     loading.value = true
     try {
-      // ✅ $fetch en vez de useFetch
       const res = await $fetch<{ ok: boolean; user?: User }>('/api/auth/login', {
         method: 'POST',
         credentials: 'include',
-        body: { email, password, remember },
+        body: { email, password, remember }
       })
       const me = res?.user
       if (!me) throw new Error('Login fallido')
@@ -56,16 +60,35 @@ export const useAuth = () => {
     }
   }
 
-  const logout = async (): Promise<void> => {
+  const register = async (input: AuthRegisterInput): Promise<User> => {
+    error.value = null
     loading.value = true
     try {
-      await $fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-    } catch { }
+      const res = await $fetch<{ ok: boolean; user?: User }>('/api/auth/register', {
+        method: 'POST',
+        credentials: 'include',
+        body: input
+      })
+      const me = res?.user
+      if (!me) throw new Error('Registro fallido')
+      user.value = me
+      return me
+    } catch (e: any) {
+      error.value = e?.data?.message || e?.message || 'No se pudo registrar'
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const logout = async (): Promise<void> => {
+    loading.value = true
+    try { await $fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }) } catch { }
     user.value = null
     loading.value = false
     try { localStorage.removeItem('cine.user.email') } catch { }
     await navigateTo('/login')
   }
 
-  return { user, loading, error, fetchMe, login, logout }
+  return { user, loading, error, fetchMe, login, register, logout }
 }

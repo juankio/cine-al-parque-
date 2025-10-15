@@ -57,6 +57,10 @@
         <span v-if="!loading">Entrar</span>
         <span v-else>Cargando…</span>
       </button>
+        <p class="mt-4 text-center text-sm text-neutral-500 dark:text-neutral-400">
+  ¿No tienes cuenta?
+  <NuxtLink to="/register" class="text-brand hover:underline">Regístrate</NuxtLink>
+</p>
 
       <p v-if="errMsg" class="text-sm text-red-600">{{ errMsg }}</p>
 
