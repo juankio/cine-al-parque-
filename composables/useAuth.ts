@@ -51,6 +51,18 @@ export const useAuth = () => {
       if (!me) throw new Error('Login fallido')
       user.value = me
       if (remember) localStorage.setItem('cine.user.email', email)
+
+      // Sugerir guardado al navegador (opcional, no rompe si no existe)
+      try {
+        // @ts-ignore
+        if ('credentials' in navigator && window.PasswordCredential) {
+          // @ts-ignore
+          const cred = new PasswordCredential({ id: email, password })
+          // @ts-ignore
+          await navigator.credentials.store(cred)
+        }
+      } catch { }
+
       return me
     } catch (e: any) {
       error.value = e?.data?.message || e?.message || 'Error de autenticación'

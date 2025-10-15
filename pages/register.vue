@@ -5,25 +5,57 @@
       <p class="text-sm text-neutral-500 dark:text-neutral-400">Cine al Parque</p>
     </div>
 
-    <form @submit.prevent="onSubmit" class="space-y-4">
+    <form autocomplete="on" @submit.prevent="onSubmit" class="space-y-4">
       <div>
-        <label class="block text-sm font-medium mb-1">Nombre</label>
-        <input v-model.trim="name" class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground" required />
+        <label for="name" class="block text-sm font-medium mb-1">Nombre</label>
+        <input
+          id="name"
+          name="name"
+          v-model.trim="name"
+          autocomplete="name"
+          required
+          class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground"
+        />
       </div>
+
       <div>
-        <label class="block text-sm font-medium mb-1">Correo</label>
-        <input v-model.trim="email" type="email" autocomplete="email" required
-               class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground" />
+        <label for="email" class="block text-sm font-medium mb-1">Correo</label>
+        <input
+          id="email"
+          name="email"
+          v-model.trim="email"
+          type="email"
+          inputmode="email"
+          autocomplete="email"
+          required
+          class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground"
+        />
       </div>
+
       <div>
-        <label class="block text-sm font-medium mb-1">Contraseña</label>
-        <input v-model="password" :type="show ? 'text' : 'password'" autocomplete="new-password" required
-               class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground" />
+        <label for="password" class="block text-sm font-medium mb-1">Contraseña</label>
+        <input
+          id="password"
+          name="password"
+          v-model="password"
+          :type="show ? 'text' : 'password'"
+          autocomplete="new-password"
+          required
+          class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground"
+        />
       </div>
+
       <div>
-        <label class="block text-sm font-medium mb-1">Confirmar contraseña</label>
-        <input v-model="confirm" :type="show ? 'text' : 'password'" autocomplete="new-password" required
-               class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground" />
+        <label for="confirm" class="block text-sm font-medium mb-1">Confirmar contraseña</label>
+        <input
+          id="confirm"
+          name="confirm"
+          v-model="confirm"
+          :type="show ? 'text' : 'password'"
+          autocomplete="new-password"
+          required
+          class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground"
+        />
         <button type="button" @click="show = !show"
                 class="text-xs mt-1 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
           {{ show ? 'Ocultar' : 'Ver' }} contraseña
