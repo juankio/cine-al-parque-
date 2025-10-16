@@ -1,24 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'class', // activa modo oscuro por clase .dark
+  darkMode: 'class', // 👈 el toggle funcionará con la clase .dark en <html>
   theme: {
     extend: {
       colors: {
-        brand: {
-          DEFAULT: '#FF2800', // Ferrari Red
-          50: '#FFE5DF',
-          100: '#FFCFC4',
-          200: '#FFAB95',
-          300: '#FF8766',
-          400: '#FF6237',
-          500: '#FF2800',
-          600: '#E52400',
-          700: '#B51C00',
-          800: '#851500',
-          900: '#540D00'
-        }
-      }
-    }
+        ferrari: {
+          red: '#FF2800',
+          dark: '#C00000',
+        },
+        surface: {
+          light: '#FFFFFF',
+          dark: '#121212',
+        },
+        theme: '#FF2800',
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 }

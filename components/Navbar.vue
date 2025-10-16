@@ -7,8 +7,10 @@
         <span class="text-sm font-semibold tracking-wide text-foreground">Cine al Parque</span>
       </NuxtLink>
 
-      <!-- Usuario -->
+      <!-- Usuario + toggle -->
       <div class="flex items-center gap-3">
+       
+
         <template v-if="me">
           <!-- Email clickeable que lleva a /me -->
           <NuxtLink
@@ -27,7 +29,7 @@
           >
             Admin
           </NuxtLink>
-
+          <ThemeToggle />
           <!-- Botón salir -->
           <button
             @click="logout"
@@ -51,6 +53,8 @@
 </template>
 
 <script setup lang="ts">
+import ThemeToggle from '~/components/ThemeToggle.vue'
+
 const { user, logout, fetchMe } = useAuth()
 const me = computed(() => user.value ?? null)
 
