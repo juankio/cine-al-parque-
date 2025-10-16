@@ -18,7 +18,7 @@
             class="hidden sm:inline-block rounded-lg bg-brand/10 px-2.5 py-1 text-xs text-foreground hover:bg-brand/20 transition-colors"
             title="Ver mi cuenta"
           >
-            {{ me.email }}
+            {{ me.name }}
           </NuxtLink>
 
           <!-- Botón admin -->
