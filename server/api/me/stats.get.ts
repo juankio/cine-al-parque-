@@ -1,3 +1,4 @@
+import { createError } from 'h3'
 import { connectDB } from '@/server/utils/mongoose'
 import { readSession } from '@/server/utils/session'
 import { Reservation } from '@/server/models/Reservation'
@@ -6,11 +7,15 @@ const { Types } = pkg
 
 export default defineEventHandler(async (event) => {
     await connectDB()
+
     const sess = await readSession(event)
-    if (!sess?.id) throw createError({ statusCode: 401, statusMessage: 'No autenticado' })
+    if (!sess?.id) {
+        throw createError({ statusCode: 401, message: 'No autenticado' })
+    }
 
     const userId = new Types.ObjectId(String(sess.id))
 
+    // Solo reservas pagadas para métricas de visitas / gasto
     const [agg] = await Reservation.aggregate([
         { $match: { userId, status: 'paid' } },
         {
@@ -21,7 +26,7 @@ export default defineEventHandler(async (event) => {
                             _id: null,
                             visits: { $sum: 1 },
                             totalSpent: { $sum: '$total' },
-                            lastVisit: { $max: '$createdAt' }
+                            lastVisit: { $max: '$createdAt' },
                         }
                     }
                 ],
@@ -34,16 +39,22 @@ export default defineEventHandler(async (event) => {
                     },
                     { $sort: { count: -1 } },
                     { $limit: 1 },
-                    // lookup showtime -> movie
+                    // showtime -> movie
                     {
                         $lookup: {
-                            from: 'showtimes', localField: '_id', foreignField: '_id', as: 'st'
+                            from: 'showtimes',
+                            localField: '_id',
+                            foreignField: '_id',
+                            as: 'st'
                         }
                     },
                     { $unwind: '$st' },
                     {
                         $lookup: {
-                            from: 'movies', localField: 'st.movieId', foreignField: '_id', as: 'mv'
+                            from: 'movies',
+                            localField: 'st.movieId',
+                            foreignField: '_id',
+                            as: 'mv'
                         }
                     },
                     { $unwind: '$mv' },
@@ -68,6 +79,6 @@ export default defineEventHandler(async (event) => {
         visits: meta?.visits ?? 0,
         totalSpent: meta?.totalSpent ?? 0,
         lastVisit: meta?.lastVisit ?? null,
-        favorite: fav
+        favorite: fav ?? null
     }
 })

@@ -1,4 +1,4 @@
-
+import { createError, getQuery } from 'h3'
 import { connectDB } from '@/server/utils/mongoose'
 import { readSession } from '@/server/utils/session'
 import { Reservation } from '@/server/models/Reservation'
@@ -7,9 +7,10 @@ const { Types } = pkg
 
 export default defineEventHandler(async (event) => {
     await connectDB()
+
     const sess = await readSession(event)
     if (!sess?.id) {
-        throw createError({ statusCode: 401, statusMessage: 'No autenticado' })
+        throw createError({ statusCode: 401, message: 'No autenticado' })
     }
 
     const q = getQuery(event)
@@ -24,9 +25,7 @@ export default defineEventHandler(async (event) => {
     const from = q.from ? new Date(String(q.from)) : null
     const to = q.to ? new Date(String(q.to)) : null
     const upcomingParam = typeof q.upcoming === 'string' ? String(q.upcoming) : undefined
-    const upcoming =
-        upcomingParam === 'true' ? true :
-            upcomingParam === 'false' ? false : null
+    const upcoming = upcomingParam === 'true' ? true : upcomingParam === 'false' ? false : null
 
     const baseMatch: any = { userId }
     if (status) baseMatch.status = status
@@ -39,13 +38,11 @@ export default defineEventHandler(async (event) => {
 
     const now = new Date()
 
-    const pipeline: any[] = [
+    // -------- Pipeline ITEMS (con orden correcto de etapas) --------
+    const itemsPipeline: any[] = [
         { $match: baseMatch },
-        { $sort: { createdAt: -1 } },
-        { $skip: skip },
-        { $limit: pageSize },
 
-        // Join showtime
+        // join showtime
         {
             $lookup: {
                 from: 'showtimes',
@@ -56,7 +53,19 @@ export default defineEventHandler(async (event) => {
         },
         { $unwind: '$st' },
 
-        // Join movie
+        // filtro upcoming por fecha del showtime (si aplica)
+        ...(upcoming !== null
+            ? [{ $match: upcoming ? { 'st.fechaHora': { $gte: now } } : { 'st.fechaHora': { $lt: now } } }]
+            : []),
+
+        // orden
+        { $sort: { createdAt: -1 } },
+
+        // paginación
+        { $skip: skip },
+        { $limit: pageSize },
+
+        // join movie
         {
             $lookup: {
                 from: 'movies',
@@ -66,57 +75,47 @@ export default defineEventHandler(async (event) => {
             }
         },
         { $unwind: { path: '$mv', preserveNullAndEmptyArrays: true } },
-    ]
 
-    // Filtro por futuras/pasadas según fecha del showtime (opcional)
-    if (upcoming !== null) {
-        pipeline.push({
-            $match: upcoming
-                ? { 'st.fechaHora': { $gte: now } }
-                : { 'st.fechaHora': { $lt: now } }
-        })
-    }
-
-    // Proyección de salida
-    pipeline.push({
-        $project: {
-            _id: 0,
-            id: { $toString: '$_id' },
-            createdAt: 1,
-            status: 1,
-            total: 1,
-            seats: 1,
-            expiresAt: 1,
-            // snapshot del carrito guardado en la reserva
-            cart: {
-                $map: {
-                    input: { $ifNull: ['$cart', []] },
-                    as: 'c',
-                    in: {
-                        nombre: '$$c.nombre',
-                        qty: '$$c.qty',
-                        unitPrice: '$$c.unitPrice',
-                        menuItemId: '$$c.menuItemId'
+        // proyección final EXACTA a tu shape
+        {
+            $project: {
+                _id: 0,
+                id: { $toString: '$_id' },
+                createdAt: 1,
+                status: 1,
+                total: 1,
+                seats: 1,
+                expiresAt: 1,
+                cart: {
+                    $map: {
+                        input: { $ifNull: ['$cart', []] },
+                        as: 'c',
+                        in: {
+                            nombre: '$$c.nombre',
+                            qty: '$$c.qty',
+                            unitPrice: '$$c.unitPrice',
+                            menuItemId: '$$c.menuItemId'
+                        }
                     }
+                },
+                showtime: {
+                    id: { $toString: '$st._id' },
+                    fechaHora: '$st.fechaHora',
+                    sala: '$st.sala',
+                    price: { $ifNull: ['$st.price', 0] }
+                },
+                movie: {
+                    id: { $toString: '$mv._id' },
+                    titulo: '$mv.titulo',
+                    poster: '$mv.poster',
+                    clasificacion: '$mv.clasificacion',
+                    duracion: '$mv.duracion'
                 }
-            },
-            showtime: {
-                id: { $toString: '$st._id' },
-                fechaHora: '$st.fechaHora',
-                sala: '$st.sala',
-                price: { $ifNull: ['$st.price', 0] }
-            },
-            movie: {
-                id: { $toString: '$mv._id' },
-                titulo: '$mv.titulo',
-                poster: '$mv.poster',
-                clasificacion: '$mv.clasificacion',
-                duracion: '$mv.duracion'
             }
         }
-    })
+    ]
 
-    // Total para paginación (mismo match base + upcoming si aplica)
+    // -------- Pipeline COUNT (consistente con items) --------
     const countPipeline: any[] = [
         { $match: baseMatch },
         {
@@ -127,19 +126,15 @@ export default defineEventHandler(async (event) => {
                 as: 'st'
             }
         },
-        { $unwind: '$st' }
+        { $unwind: '$st' },
+        ...(upcoming !== null
+            ? [{ $match: upcoming ? { 'st.fechaHora': { $gte: now } } : { 'st.fechaHora': { $lt: now } } }]
+            : []),
+        { $count: 'total' }
     ]
-    if (upcoming !== null) {
-        countPipeline.push({
-            $match: upcoming
-                ? { 'st.fechaHora': { $gte: now } }
-                : { 'st.fechaHora': { $lt: now } }
-        })
-    }
-    countPipeline.push({ $count: 'total' })
 
     const [items, totalAgg] = await Promise.all([
-        Reservation.aggregate(pipeline),
+        Reservation.aggregate(itemsPipeline),
         Reservation.aggregate(countPipeline)
     ])
 

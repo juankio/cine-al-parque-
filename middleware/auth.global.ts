@@ -1,18 +1,30 @@
+// middleware/auth.global.ts
 export default defineNuxtRouteMiddleware(async (to) => {
-    // Solo protege rutas que lo pidan explícitamente
-    // en la página: definePageMeta({ auth: true })
-    if (to.meta?.auth !== true) return
+    // sólo protegemos estas rutas (ajusta si quieres más)
+    const protectedPrefixes = ['/me', '/admin']
+    if (!protectedPrefixes.some(p => to.path.startsWith(p))) return
 
-    const { user, fetchMe } = useAuth()
+    const { user } = useAuth()
 
-    // Si no tenemos usuario en memoria, intentamos cargar la sesión
-    if (!user.value) {
-        await fetchMe()
+    // si ya tenemos user en memoria, ok
+    if (user.value) return
+
+    try {
+        // valida sesión con cookie (HttpOnly) primero
+        const me = await $fetch<{ authenticated: boolean; user: any }>('/api/auth/me', {
+            credentials: 'include'
+        })
+
+        if (me?.authenticated && me?.user) {
+            // hidrata el estado global de auth
+            user.value = me.user
+            return
+        }
+    } catch (_) {
+        // ignoramos el error; abajo redirigimos
     }
 
-    // Si sigue sin usuario → redirige a /login con ?redirect
-    if (!user.value) {
-        const redirect = encodeURIComponent(to.fullPath)
-        return navigateTo({ path: '/login', query: { redirect } })
-    }
+    // redirige a login con redirect seguro
+    const redirect = encodeURIComponent(to.fullPath)
+    return navigateTo(`/login?redirect=${redirect}`)
 })

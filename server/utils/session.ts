@@ -1,41 +1,22 @@
-import { SignJWT, jwtVerify } from 'jose'
-import type { H3Event } from 'h3'
+import { getCookie } from 'h3'
+import jwt from 'jsonwebtoken'
 
-const COOKIE_NAME = 'cine_session'
-const COOKIE_OPTIONS = {
-    httpOnly: true,
-    sameSite: 'lax' as const,
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 7 // 7 días
-}
+const COOKIE_NAME = 'session'
 
-function getSecretKey() {
-    const { authSecret } = useRuntimeConfig()
-    if (!authSecret) throw new Error('Falta AUTH_SECRET')
-    return new TextEncoder().encode(authSecret)
-}
+type Sess = { id: string, email: string, isAdmin?: boolean, name?: string }
 
-export async function createSession(event: H3Event, payload: { id: string, name: string, email: string }) {
-    const key = getSecretKey()
-    const token = await new SignJWT(payload)
-        .setProtectedHeader({ alg: 'HS256' })
-        .setIssuedAt()
-        .setExpirationTime('7d')
-        .sign(key)
-    setCookie(event, COOKIE_NAME, token, COOKIE_OPTIONS)
-}
-
-export function destroySession(event: H3Event) {
-    deleteCookie(event, COOKIE_NAME, { path: '/' })
-}
-
-export async function readSession(event: H3Event) {
+export async function readSession(event: any): Promise<Sess | null> {
     const token = getCookie(event, COOKIE_NAME)
     if (!token) return null
+    const { authSecret } = useRuntimeConfig()
     try {
-        const { payload } = await jwtVerify(token, getSecretKey())
-        return payload as any
+        const payload = jwt.verify(token, authSecret) as any
+        return {
+            id: String(payload.sub),
+            email: String(payload.email),
+            isAdmin: !!payload.isAdmin,
+            name: payload.name ? String(payload.name) : undefined
+        }
     } catch {
         return null
     }
