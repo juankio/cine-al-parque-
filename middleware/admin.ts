@@ -1,14 +1,19 @@
 export default defineNuxtRouteMiddleware(async (to) => {
-    const { user, fetchMe } = useAuth()
+    if (process.server) return
+    // Solo rutas /admin
+    if (!to.path.startsWith('/admin')) return
 
-    // Cargamos usuario si no hay sesión en memoria
-    if (!user.value) {
-        await fetchMe()
+    const { user, ensureSession } = useAuth()
+
+    // Ya cargado y no admin → fuera
+    if (user.value && !user.value.isAdmin) {
+        return navigateTo('/')
     }
 
-    // Si no hay usuario o no es admin → afuera
-    if (!user.value || !user.value.isAdmin) {
-        console.warn(`[auth] acceso denegado a ruta admin: ${to.fullPath}`)
-        return navigateTo('/')
+    // Si no hay user, asegúralo
+    if (!user.value) {
+        await ensureSession()
+        if (!user.value) return navigateTo(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
+        if (!user.value.isAdmin) return navigateTo('/')
     }
 })

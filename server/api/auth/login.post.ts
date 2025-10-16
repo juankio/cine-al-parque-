@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt'
 import crypto from 'node:crypto'
 import { usersCol } from '~/server/utils/db'
 import { createSession } from '~/server/utils/auth'
+import { isAdminEmail } from '~/server/utils/admin'
 
 function looksLikeBcrypt(hash?: string) {
     return !!hash && (hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$'))
@@ -21,7 +22,6 @@ export default defineEventHandler(async (event) => {
     const remember = !!body?.remember
 
     console.log('[API login] IN', email, 'remember:', remember)
-
     if (!email || !password) {
         throw createError({ statusCode: 400, message: 'Email y contraseña requeridos' })
     }
@@ -47,17 +47,20 @@ export default defineEventHandler(async (event) => {
 
     if (!ok) throw createError({ statusCode: 401, message: 'Credenciales inválidas' })
 
+    // 👇 NEW: admin por ENV (y respetamos el flag guardado si ya existe)
+    const isAdmin = isAdminEmail(email) || !!user.isAdmin
+
     const payload = {
         sub: String(user._id),
         email: user.email,
-        isAdmin: !!user.isAdmin,
+        isAdmin,
         name: user.name,
     }
     createSession(event, payload, remember)
 
-    console.log('[API login] OUT ok', email)
+    console.log('[API login] OUT ok', email, 'isAdmin:', isAdmin)
     return {
         ok: true,
-        user: { id: String(user._id), email: user.email, name: user.name, isAdmin: !!user.isAdmin },
+        user: { id: String(user._id), email: user.email, name: user.name, isAdmin }
     }
 })
