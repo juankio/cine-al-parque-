@@ -46,7 +46,9 @@
       </div>
 
       <div>
-        <label for="confirm" class="block text-sm font-medium mb-1">Confirmar contraseña</label>
+        <label for="confirm" class="block text-sm font-medium mb-1"
+          >Confirmar contraseña</label
+        >
         <input
           id="confirm"
           name="confirm"
@@ -56,14 +58,20 @@
           required
           class="w-full rounded-xl border border-theme px-3 py-2 bg-surface text-foreground"
         />
-        <button type="button" @click="show = !show"
-                class="text-xs mt-1 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">
-          {{ show ? 'Ocultar' : 'Ver' }} contraseña
+        <button
+          type="button"
+          @click="show = !show"
+          class="text-xs mt-1 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+        >
+          {{ show ? "Ocultar" : "Ver" }} contraseña
         </button>
       </div>
 
-      <button :disabled="loading" type="submit"
-              class="w-full rounded-xl py-2 font-semibold bg-brand text-white disabled:opacity-60">
+      <button
+        :disabled="loading"
+        type="submit"
+        class="w-full rounded-xl py-2 font-semibold bg-red-500 disabled:opacity-60"
+      >
         <span v-if="!loading">Registrarme</span>
         <span v-else>Creando…</span>
       </button>
@@ -79,29 +87,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from '#imports'
-import { useAuth } from '~/composables/useAuth'
-import { validateRegister } from '~/utils/validators'
+import { ref, computed } from "vue";
+import { useRouter } from "#imports";
+import { useAuth } from "~/composables/useAuth";
+import { validateRegister } from "~/utils/validators";
 
-definePageMeta({ layout: 'auth' })
+definePageMeta({ layout: "auth" });
 
-const router = useRouter()
-const { register, loading, error } = useAuth()
+const router = useRouter();
+const { register, loading, error } = useAuth();
 
-const name = ref('') 
-const email = ref('') 
-const password = ref('') 
-const confirm = ref('') 
-const show = ref(false)
-const errMsg = computed(() => (typeof error.value === 'string' ? error.value : ''))
+const name = ref("");
+const email = ref("");
+const password = ref("");
+const confirm = ref("");
+const show = ref(false);
+const errMsg = computed(() => (typeof error.value === "string" ? error.value : ""));
 
 const onSubmit = async () => {
-  const v = validateRegister(name.value, email.value, password.value, confirm.value)
-  if (v) return alert(v)
+  const v = validateRegister(name.value, email.value, password.value, confirm.value);
+  if (v) return alert(v);
   try {
-    await register({ name: name.value, email: email.value, password: password.value })
-    router.push('/')
+    await register({ name: name.value, email: email.value, password: password.value });
+    router.push("/");
   } catch {}
-}
+};
 </script>
