@@ -58,7 +58,10 @@ async function create() {
     // await navigateTo(`/showtimes/${created._id}`)
   }
 }
-
+watchEffect(async () => {
+  if (!movieId.value) return
+  await fetchShowtimes(movieId.value, { page: 1, pageSize: 50, upcoming: true }) // 👈 solo próximas
+})
 async function del(id: string) {
   if (!movieId.value) return;
   if (!confirm("¿Eliminar función?")) return;
