@@ -25,18 +25,8 @@
       class="block rounded-lg px-3 py-2 text-sm hover:bg-brand/10"
       >Recetas</NuxtLink
     >
-    <NuxtLink
-      to="/admin/showtimes"
-      class="block rounded-lg px-3 py-2 text-sm hover:bg-brand/10"
-      >Funciones</NuxtLink
-    >
     <NuxtLink to="/admin/kpi" class="block rounded-lg px-3 py-2 text-sm hover:bg-brand/10"
       >KPI</NuxtLink
-    >
-    <NuxtLink
-      to="/admin/showtimes"
-      class="block rounded-lg px-3 py-2 text-sm hover:bg-brand/10"
-      >Funciones</NuxtLink
     >
   </aside>
 </template>
