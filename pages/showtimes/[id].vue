@@ -1,29 +1,26 @@
 <script setup lang="ts">
 import SeatTable from '~/components/SeatTable.vue'
 
-// ⚠️ Fuerza client-only para evitar que el fetch ocurra en SSR
-definePageMeta({ ssr: false })
+definePageMeta({ ssr: false }) // evita fetch en SSR con id vacío
 
 const route = useRoute()
-const showtimeId = computed(() => String(route.params.id || ''))
+const showtimeId = computed(() => String(route.params.id || '')) // es un Ref<string>
 
 const {
   loading, error, tables, totalSeats, takenSeats, freeSeats,
   selected, selectionList, lastPayload,
-  fetchLayout, toggleSeat,
-  startAutoRefresh, stopAutoRefresh
-} = useShowtimeLayout(showtimeId)
+  fetchLayout, toggleSeat, startAutoRefresh, stopAutoRefresh
+} = useShowtimeLayout(showtimeId) // le pasamos el Ref
 
-// Dispara en cliente, ya con el id real
 onMounted(() => {
   console.log('[page] mounted id =', showtimeId.value)
-  fetchLayout()              // 1ra carga inmediata
-  startAutoRefresh(10000)    // refresh cada 10s
+  fetchLayout()           // ← aquí NO olvides .value en logs; el composable ya lo resuelve
+  startAutoRefresh(10000)
 })
 onBeforeUnmount(stopAutoRefresh)
 
 const reserving = ref(false)
-async function onReserve () { alert(`Reservar (demo): ${selectionList.value.join(', ')}`) }
+async function onReserve() { alert(`Reservar (demo): ${selectionList.value.join(', ')}`) }
 </script>
 
 <template>
@@ -31,12 +28,17 @@ async function onReserve () { alert(`Reservar (demo): ${selectionList.value.join
     <header class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-extrabold">Selecciona tus sillas</h1>
-        <p class="text-sm text-neutral-500">Total: {{ totalSeats }} · Ocupadas: {{ takenSeats }} · Libres: {{ freeSeats }}</p>
+        <p class="text-sm text-neutral-500">
+          Total: {{ totalSeats }} · Ocupadas: {{ takenSeats }} · Libres: {{ freeSeats }}
+        </p>
       </div>
       <div class="flex items-center gap-2">
         <button @click="fetchLayout" class="rounded-lg border border-theme px-3 py-2 text-sm">Refrescar</button>
-        <button @click="onReserve" :disabled="selectionList.length===0 || reserving"
-                class="rounded-lg bg-brand px-3 py-2 text-sm font-semibold disabled:opacity-50">
+        <button
+          @click="onReserve"
+          :disabled="selectionList.length === 0 || reserving"
+          class="rounded-lg bg-brand px-3 py-2 text-sm font-semibold disabled:opacity-50"
+        >
           {{ reserving ? 'Creando…' : `Reservar (${selectionList.length})` }}
         </button>
       </div>
@@ -54,15 +56,13 @@ async function onReserve () { alert(`Reservar (demo): ${selectionList.value.join
     </div>
 
     <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <SeatTable v-for="t in tables" :key="t.table" :table="t" :selected-keys="selected" @toggle="toggleSeat" />
-    </div>
-
-    <div class="rounded-2xl border border-theme bg-surface p-4">
-      <h3 class="mb-1 font-semibold">Tu selección</h3>
-      <p v-if="selectionList.length===0" class="text-neutral-500">No has elegido sillas.</p>
-      <div v-else class="flex flex-wrap gap-2">
-        <span v-for="k in selectionList" :key="k" class="rounded-lg border border-brand/30 bg-brand/10 px-2 py-1 text-xs text-brand">{{ k }}</span>
-      </div>
+      <SeatTable
+        v-for="t in tables"
+        :key="t.table"
+        :table="t"
+        :selected-keys="selected"
+        @toggle="toggleSeat"
+      />
     </div>
 
     <details class="rounded-2xl border border-theme bg-surface p-4 text-xs opacity-80">

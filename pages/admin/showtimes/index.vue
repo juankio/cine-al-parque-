@@ -105,6 +105,8 @@
 
 <script setup lang="ts">
 import AdminMovieSelect from "~/components/AdminMovieSelect.vue";
+import { useShowtimeLayout } from '~/composables/useShowtimeLayout'
+
 import { useAdminShowtimes } from "~/composables/admin/useAdminShowtimes";
 
 definePageMeta({ layout: "admin", middleware: ["admin"] });

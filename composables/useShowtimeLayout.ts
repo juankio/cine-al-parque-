@@ -3,91 +3,83 @@ type SeatState = { code: string; taken: boolean }
 type TableRow = { table: string; capacity: number; seats: SeatState[] }
 type LayoutRes = { showtimeId: string; tables: TableRow[] }
 
-export function useShowtimeLayout(showtimeId: string) {
+export function useShowtimeLayout(idRef: Ref<string>) {
     const loading = ref(false)
     const error = ref<string | null>(null)
     const tables = ref<TableRow[]>([])
-    const selected = ref<Set<string>>(new Set()) // ej: "M1-A", "M1-B"
+    const selected = ref<Set<string>>(new Set()) // ej: "M1-A"
 
-    // helpers
+    // métricas
     const totalSeats = computed(() => tables.value.reduce((acc, t) => acc + t.seats.length, 0))
-    const takenSeats = computed(() =>
-        tables.value.reduce((acc, t) => acc + t.seats.filter(s => s.taken).length, 0)
-    )
+    const takenSeats = computed(() => tables.value.reduce((acc, t) => acc + t.seats.filter(s => s.taken).length, 0))
     const freeSeats = computed(() => totalSeats.value - takenSeats.value)
     const selectionList = computed(() => Array.from(selected.value))
 
-    function resetSelection() {
-        selected.value.clear()
-    }
-
+    function resetSelection() { selected.value.clear() }
     function toggleSeat(tableCode: string, seatCode: string, taken: boolean) {
         if (taken) return
-        const key = `${tableCode}-${seatCode}`
+        const k = `${tableCode}-${seatCode}`
         const set = selected.value
-        if (set.has(key)) set.delete(key)
-        else set.add(key)
+        set.has(k) ? set.delete(k) : set.add(k)
     }
 
     async function fetchLayout() {
+        const showtimeId = idRef.value?.trim()
+        if (!showtimeId) return
+
         loading.value = true
         error.value = null
         try {
-            const res = await $fetch<LayoutRes>(`/api/showtimes/${showtimeId}/layout`, { credentials: 'include' })
-            tables.value = (res?.tables || []).map(t => ({
+            // ⚠️ usa 'availability' porque ese es tu handler público
+            const res = await $fetch<LayoutRes>(`/api/showtimes/${showtimeId}/availability`, {
+                credentials: 'include'
+            })
+            // debug útil
+            console.log('[layout]', showtimeId, res)
+
+            const arr = Array.isArray(res?.tables) ? res.tables : []
+            tables.value = arr.map(t => ({
                 table: t.table,
                 capacity: t.capacity,
-                seats: t.seats.map(s => ({ code: s.code, taken: !!s.taken }))
+                seats: (t.seats || []).map(s => ({ code: s.code, taken: !!s.taken }))
             }))
-            // limpiar selección si algún seat pasó a taken
+
+            // si un asiento seleccionado pasó a taken, límpialo
             for (const key of Array.from(selected.value)) {
-                const [t, s] = key.split('-')
-                const tab = tables.value.find(x => x.table === t)
-                const nowTaken = tab?.seats.find(x => x.code === s)?.taken
+                const [tb, sc] = key.split('-')
+                const nowTaken = tables.value.find(x => x.table === tb)?.seats.find(x => x.code === sc)?.taken
                 if (nowTaken) selected.value.delete(key)
             }
         } catch (e: any) {
+            console.error('[layout] error', e)
             error.value = e?.data?.message || e?.message || 'No se pudo cargar el layout'
+            tables.value = []
         } finally {
             loading.value = false
         }
     }
 
-    // POST /api/reservations
-    async function createReservation(items?: { menuItemId: string; qty: number }[]) {
-        if (selectionList.value.length === 0) throw new Error('Selecciona al menos 1 silla')
-        const body: any = {
-            showtimeId,
-            seats: selectionList.value
-        }
-        if (items && items.length) body.items = items
-
-        // idempotencia/errores: que el backend devuelva ok/expiresAt etc
-        const res = await $fetch<{ ok: boolean; reservation?: { id: string; total: number }; expiresAt?: string }>(
-            '/api/reservations',
-            { method: 'POST', credentials: 'include', body }
-        )
-        return res
-    }
-
-    // refresco automático cada 10s (para ver holds de otros)
+    // refresco automático
     let timer: any = null
     function startAutoRefresh(ms = 10_000) {
         stopAutoRefresh()
-        timer = setInterval(() => fetchLayout(), ms)
+        timer = setInterval(fetchLayout, ms)
     }
     function stopAutoRefresh() {
         if (timer) { clearInterval(timer); timer = null }
     }
 
-    onMounted(fetchLayout)
+    // 🔁 dispara cuando el id esté listo o cambie
+    watch(idRef, (v) => {
+        if (v) fetchLayout()
+    }, { immediate: true })
+
     onBeforeUnmount(stopAutoRefresh)
 
     return {
-        loading, error, tables, freeSeats, takenSeats, totalSeats,
+        loading, error, tables, totalSeats, takenSeats, freeSeats,
         selected, selectionList,
         fetchLayout, toggleSeat, resetSelection,
-        createReservation,
         startAutoRefresh, stopAutoRefresh
     }
 }
