@@ -1,28 +1,45 @@
 <template>
-  <section class="space-y-2">
+  <section class="space-y-3">
     <h1 class="text-2xl font-bold">Admin · Dashboard</h1>
-    <p class="text-neutral-500">Gestiona cartelera, funciones y KPI.</p>
+    <p class="text-muted">Gestiona cartelera, funciones y KPI.</p>
+
     <div class="grid gap-3 md:grid-cols-3">
-      <NuxtLink
+      <UButton
         to="/admin/movies"
-        class="rounded-xl border border-theme p-4 hover:bg-brand/10"
-        >🎬 Películas</NuxtLink
+        block
+        size="lg"
+        variant="soft"
+        color="primary"
+        class="justify-start rounded-xl py-6"
       >
-      <NuxtLink
+        <span class="text-xl mr-2">🎬</span> Películas
+      </UButton>
+
+      <UButton
         to="/admin/showtimes"
-        class="rounded-xl border border-theme p-4 hover:bg-brand/10"
-        >🕒 Funciones</NuxtLink
+        block
+        size="lg"
+        variant="soft"
+        color="primary"
+        class="justify-start rounded-xl py-6"
       >
-      <NuxtLink
+        <span class="text-xl mr-2">🕒</span> Funciones
+      </UButton>
+
+      <UButton
         to="/admin/kpi"
-        class="rounded-xl border border-theme p-4 hover:bg-brand/10"
-        >📈 KPI</NuxtLink
+        block
+        size="lg"
+        variant="soft"
+        color="primary"
+        class="justify-start rounded-xl py-6"
       >
+        <span class="text-xl mr-2">📈</span> KPI
+      </UButton>
     </div>
   </section>
 </template>
 
-<script setup lang="ts">
-import Admin from "~/layouts/admin.vue";
-definePageMeta({ layout: "admin", middleware: ["admin"] });
+<script setup>
+definePageMeta({ layout: 'admin', middleware: ['admin'] })
 </script>

@@ -8,58 +8,66 @@ onMounted(() => {
   if (!user.value) fetchMe().catch(() => {})
 })
 
-const colorMode = useColorMode()
+const route = useRoute()
 
-function toggleTheme() {
-  colorMode.preference = colorMode.preference === 'dark' ? 'light' : 'dark'
+// Color mode (Nuxt)
+const colorMode = useColorMode()
+const isDark = computed(() => colorMode.value === 'dark')
+const toggleTheme = () => {
+  colorMode.preference = isDark.value ? 'light' : 'dark'
 }
 
-const isDark = computed(() => colorMode.preference === 'dark')
+// Admin helpers
+const isAdmin = computed(() => !!me.value?.isAdmin)
+const adminActive = computed(() => route.path.startsWith('/admin'))
 </script>
 
-
 <template>
-  <header class="sticky top-0 z-40 border-b border-default bg-surface/80 backdrop-blur transition-colors">
+  <header class="sticky top-0 z-40 border-b border-default bg-default/80 backdrop-blur transition-colors">
     <UContainer>
       <nav class="flex h-14 items-center justify-between gap-3">
         <!-- Logo -->
         <NuxtLink to="/" class="flex items-center gap-2 shrink-0">
-          <span
-            class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20 text-sm font-bold text-primary"
-          >
+          <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20 text-sm font-bold text-primary">
             🎬
           </span>
           <span class="text-sm font-semibold tracking-wide">Cine al Parque</span>
         </NuxtLink>
 
-        <!-- Derecha: tema + usuario -->
+        <!-- Right side: Admin (condicional) + Tema + Usuario/Login -->
         <div class="flex items-center gap-2">
-          <!-- Toggle de tema -->
+          <!-- Botón Admin solo si es admin -->
           <UButton
-  :icon="isDark ? 'i-heroicons-moon-20-solid' : 'i-heroicons-sun-20-solid'"
-  variant="ghost"
-  color="gray"
-  size="sm"
-  class="gap-2"
-  @click="toggleTheme"
->
-  <span class="hidden sm:inline text-xs">{{ isDark ? 'Oscuro' : 'Claro' }}</span>
-</UButton>
+            v-if="isAdmin"
+            :to="'/admin'"
+            size="sm"
+            color="primary"
+            :variant="adminActive ? 'solid' : 'ghost'"
+            class="hidden sm:inline-flex"
+          >
+            Admin
+          </UButton>
 
+          <!-- Toggle tema -->
+          <UButton
+            :icon="isDark ? 'i-heroicons-moon-20-solid' : 'i-heroicons-sun-20-solid'"
+            variant="ghost"
+            color="gray"
+            size="sm"
+            class="gap-2"
+            @click="toggleTheme"
+          >
+            <span class="hidden sm:inline text-xs">{{ isDark ? 'Oscuro' : 'Claro' }}</span>
+          </UButton>
 
-          <!-- Usuario o login -->
+          <!-- Usuario / Login -->
           <template v-if="me">
             <NuxtLink to="/me" class="flex items-center gap-2">
-              <UAvatar
-                :alt="me.name"
-                size="xs"
-                class="bg-primary/10 text-primary"
-              >
+              <UAvatar :alt="me.name" size="xs" class="bg-primary/10 text-primary">
                 {{ me.name?.[0]?.toUpperCase() || 'U' }}
               </UAvatar>
               <span class="hidden sm:inline text-xs">{{ me.name }}</span>
             </NuxtLink>
-
             <UButton
               size="sm"
               variant="ghost"
@@ -70,7 +78,6 @@ const isDark = computed(() => colorMode.preference === 'dark')
               title="Cerrar sesión"
             />
           </template>
-
           <template v-else>
             <UButton to="/login" size="sm" color="primary" variant="soft">
               Entrar

@@ -1,210 +1,23 @@
-<template>
-  <section class="space-y-4">
-    <header class="flex items-end justify-between">
-      <div>
-        <h1 class="text-2xl font-bold">Películas</h1>
-        <p class="text-sm text-neutral-500">
-          Activa/descativa para mostrar en cartelera.
-        </p>
-      </div>
-      <div class="flex gap-2">
-        <input
-          v-model.trim="q"
-          type="search"
-          placeholder="Buscar…"
-          class="rounded-xl border border-theme px-3 py-2 text-sm bg-surface"
-        />
-        <button
-          @click="openCreate = true"
-          class="rounded-xl bg-brand text-white px-3 py-2 text-sm font-semibold"
-        >
-          Nueva
-        </button>
-      </div>
-    </header>
-
-    <div v-if="loading" class="text-neutral-500">Cargando…</div>
-    <div v-else-if="error" class="text-red-500">{{ error }}</div>
-
-    <div v-else class="grid gap-3">
-      <div
-        v-for="m in filtered"
-        :key="m.id"
-        class="rounded-2xl border border-theme bg-surface p-4 flex gap-3"
-      >
-        <img
-          :src="m.poster || '/favicon.ico'"
-          class="h-20 w-14 rounded-lg object-cover border border-theme/60"
-        />
-        <div class="min-w-0 flex-1">
-          <h3 class="font-semibold">{{ m.titulo }}</h3>
-          <p class="text-xs text-neutral-500">
-            {{ m.clasificacion || "—" }} · {{ m.duracion ? m.duracion + " min" : "—" }}
-          </p>
-          <div class="mt-2 flex gap-2">
-            <NuxtLink
-              :to="`/admin/movies/${m._id}/showtimes`"
-              class="rounded-lg border border-theme px-2.5 py-1 text-xs hover:bg-brand/10"
-              >Funciones</NuxtLink
-            >
-            <button
-              @click="startEdit(m)"
-              class="rounded-lg border border-theme px-2.5 py-1 text-xs hover:bg-brand/10"
-            >
-              Editar
-            </button>
-            <button
-              @click="toggleActivo(m)"
-              class="rounded-lg px-2.5 py-1 text-xs"
-              :class="
-                m.activo
-                  ? 'border border-green-500/40 text-green-400 hover:bg-green-500/10'
-                  : 'border border-neutral-500/40 text-neutral-400 hover:bg-neutral-500/10'
-              "
-            >
-              {{ m.activo ? "Activo" : "Inactivo" }}
-            </button>
-            <button
-              @click="del(m)"
-              class="rounded-lg border border-red-500/40 text-red-400 px-2.5 py-1 text-xs hover:bg-red-500/10"
-            >
-              Eliminar
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="(list?.items?.length || 0) === 0" class="text-neutral-500">
-        No hay resultados.
-      </div>
-    </div>
-
-    <!-- Crear -->
-    <dialog v-if="openCreate" class="fixed inset-0 grid place-items-center bg-black/40">
-      <div class="w-full max-w-md rounded-2xl border border-theme bg-surface p-4">
-        <h3 class="font-semibold mb-2">Nueva película</h3>
-        <form @submit.prevent="create">
-          <input
-            v-model.trim="form.titulo"
-            placeholder="Título"
-            class="w-full mb-2 rounded-xl border border-theme px-3 py-2 bg-surface"
-          />
-          <input
-            v-model.trim="form.poster"
-            placeholder="URL poster"
-            class="w-full mb-2 rounded-xl border border-theme px-3 py-2 bg-surface"
-          />
-          <div class="grid grid-cols-2 gap-2 mb-2">
-            <input
-              v-model.trim="form.clasificacion"
-              placeholder="Clasificación"
-              class="rounded-xl border border-theme px-3 py-2 bg-surface"
-            />
-            <input
-              v-model.number="form.duracion"
-              type="number"
-              placeholder="Duración (min)"
-              class="rounded-xl border border-theme px-3 py-2 bg-surface"
-            />
-          </div>
-          <textarea
-            v-model.trim="form.sinopsis"
-            placeholder="Sinopsis"
-            class="w-full h-24 rounded-xl border border-theme px-3 py-2 bg-surface"
-          ></textarea>
-          <div class="mt-3 flex justify-end gap-2">
-            <button
-              type="button"
-              @click="openCreate = false"
-              class="rounded-xl border border-theme px-3 py-1.5 text-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              class="rounded-xl bg-brand text-white px-3 py-1.5 text-sm font-semibold"
-            >
-              Crear
-            </button>
-          </div>
-        </form>
-      </div>
-    </dialog>
-
-    <!-- Editar -->
-    <dialog v-if="openEdit" class="fixed inset-0 grid place-items-center bg-black/40">
-      <div class="w-full max-w-md rounded-2xl border border-theme bg-surface p-4">
-        <h3 class="font-semibold mb-2">Editar película</h3>
-        <form @submit.prevent="saveEdit">
-          <input
-            v-model.trim="form.titulo"
-            placeholder="Título"
-            class="w-full mb-2 rounded-xl border border-theme px-3 py-2 bg-surface"
-          />
-          <input
-            v-model.trim="form.poster"
-            placeholder="URL poster"
-            class="w-full mb-2 rounded-xl border border-theme px-3 py-2 bg-surface"
-          />
-          <div class="grid grid-cols-2 gap-2 mb-2">
-            <input
-              v-model.trim="form.clasificacion"
-              placeholder="Clasificación"
-              class="rounded-xl border border-theme px-3 py-2 bg-surface"
-            />
-            <input
-              v-model.number="form.duracion"
-              type="number"
-              placeholder="Duración (min)"
-              class="rounded-xl border border-theme px-3 py-2 bg-surface"
-            />
-          </div>
-          <textarea
-            v-model.trim="form.sinopsis"
-            placeholder="Sinopsis"
-            class="w-full h-24 rounded-xl border border-theme px-3 py-2 bg-surface"
-          ></textarea>
-          <label class="mt-2 inline-flex items-center gap-2 text-sm">
-            <input type="checkbox" v-model="form.activo" /> Activo en cartelera
-          </label>
-          <div class="mt-3 flex justify-end gap-2">
-            <button
-              type="button"
-              @click="openEdit = false"
-              class="rounded-xl border border-theme px-3 py-1.5 text-sm"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              class="rounded-xl bg-brand text-white px-3 py-1.5 text-sm font-semibold"
-            >
-              Guardar
-            </button>
-          </div>
-        </form>
-      </div>
-    </dialog>
-  </section>
-</template>
-
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import Admin from '~/layouts/admin.vue'
 import { useAdminMovies, type AdminMovie } from '~/composables/admin/useAdminMovies'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
-
 const { list, loading, error, fetchMovies, createMovie, updateMovie, removeMovie } = useAdminMovies()
-const q = ref('')
 
+const q = ref('')
 const openCreate = ref(false)
 const openEdit = ref(false)
 const currentId = ref<string | null>(null)
 
 const form = reactive<Partial<AdminMovie>>({
-  titulo: '', poster: '', clasificacion: '', duracion: undefined, sinopsis: '', activo: true
+  titulo: '',
+  poster: '',
+  clasificacion: '',
+  duracion: undefined,
+  sinopsis: '',
+  activo: true
 })
 
 onMounted(() => { fetchMovies(1, 50) })
@@ -217,7 +30,14 @@ const filtered = computed(() => {
 
 function startEdit(m: AdminMovie) {
   currentId.value = m._id
-  Object.assign(form, m)
+  Object.assign(form, {
+    titulo: m.titulo || '',
+    poster: m.poster || '',
+    clasificacion: m.clasificacion || '',
+    duracion: m.duracion,
+    sinopsis: m.sinopsis || '',
+    activo: !!m.activo
+  })
   openEdit.value = true
 }
 
@@ -245,4 +65,195 @@ async function del(m: AdminMovie) {
   await removeMovie(m.id)
   await fetchMovies(1, 50)
 }
+
+function clearQ () { q.value = '' }
 </script>
+
+<template>
+  <section class="space-y-5">
+    <!-- Header -->
+    <header class="flex items-end justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-bold">Películas</h1>
+        <p class="text-sm text-muted">Activa/desactiva para mostrar en cartelera.</p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <UInput
+          v-model.trim="q"
+          type="search"
+          placeholder="Buscar…"
+          icon="i-heroicons-magnifying-glass-20-solid"
+          class="w-64"
+        />
+        <UButton v-if="q" variant="ghost" color="gray" @click="clearQ">Limpiar</UButton>
+        <UButton color="primary" @click="openCreate = true">
+          Nueva
+        </UButton>
+      </div>
+    </header>
+
+    <!-- Loading -->
+    <div v-if="loading" class="grid gap-3">
+      <div v-for="i in 6" :key="i" class="rounded-2xl border border-default p-4">
+        <div class="flex gap-3">
+          <USkeleton class="h-20 w-14 rounded-lg" />
+          <div class="flex-1 space-y-2">
+            <USkeleton class="h-5 w-2/3" />
+            <USkeleton class="h-4 w-1/2" />
+            <div class="flex gap-2 pt-2">
+              <USkeleton class="h-7 w-20" />
+              <USkeleton class="h-7 w-20" />
+              <USkeleton class="h-7 w-24" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <UAlert
+      v-else-if="error"
+      color="gray"
+      variant="soft"
+      icon="i-heroicons-exclamation-triangle"
+      :description="error"
+      title="No se pudo cargar la lista"
+    />
+
+    <!-- Listado -->
+    <div v-else class="grid gap-3">
+      <div
+        v-for="m in filtered"
+        :key="m.id"
+        class="rounded-2xl border border-default bg-default p-4 flex gap-3"
+      >
+        <img
+          :src="m.poster || '/favicon.ico'"
+          class="h-20 w-14 rounded-lg object-cover border border-default/60"
+        />
+        <div class="min-w-0 flex-1">
+          <h3 class="font-semibold">{{ m.titulo }}</h3>
+          <p class="text-xs text-muted">
+            {{ m.clasificacion || "—" }} · {{ m.duracion ? m.duracion + " min" : "—" }}
+          </p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <UButton
+              :to="`/admin/movies/${m._id}/showtimes`"
+              size="xs"
+              variant="outline"
+              color="primary"
+            >
+              Funciones
+            </UButton>
+
+            <UButton
+              size="xs"
+              variant="outline"
+              color="gray"
+              @click="startEdit(m)"
+            >
+              Editar
+            </UButton>
+
+            <UButton
+              size="xs"
+              :variant="m.activo ? 'solid' : 'outline'"
+              :color="m.activo ? 'primary' : 'gray'"
+              @click="toggleActivo(m)"
+            >
+              {{ m.activo ? "Activo" : "Inactivo" }}
+            </UButton>
+
+            <UButton
+              size="xs"
+              variant="ghost"
+              color="gray"
+              @click="del(m)"
+              icon="i-heroicons-trash"
+              title="Eliminar"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div v-if="(list?.items?.length || 0) === 0" class="text-muted">
+        No hay resultados.
+      </div>
+    </div>
+
+    <!-- Crear (UModal v4) -->
+    <UModal
+      v-model:open="openCreate"
+      title="🎬 Nueva película"
+      description="Completa la información para registrar una nueva película."
+    >
+      <template #body>
+        <form @submit.prevent="create" class="space-y-3">
+          <UInput v-model.trim="form.titulo" placeholder="Título" />
+          <UInput v-model.trim="form.poster" placeholder="URL del poster" />
+          <div class="grid grid-cols-2 gap-3">
+            <UInput v-model.trim="form.clasificacion" placeholder="Clasificación" />
+            <UInput v-model.number="form.duracion" type="number" placeholder="Duración (min)" />
+          </div>
+          <UTextarea v-model.trim="form.sinopsis" placeholder="Sinopsis" :rows="4" />
+        </form>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton
+            label="Cancelar"
+            variant="subtle"
+            color="neutral"
+            @click="openCreate = false"
+          />
+          <UButton
+            label="Crear"
+            color="primary"
+            @click="create"
+          />
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Editar (UModal v4) -->
+    <UModal
+      v-model:open="openEdit"
+      title="✏️ Editar película"
+      description="Modifica los datos de la película seleccionada."
+    >
+      <template #body>
+        <form @submit.prevent="saveEdit" class="space-y-3">
+          <UInput v-model.trim="form.titulo" placeholder="Título" />
+          <UInput v-model.trim="form.poster" placeholder="URL del poster" />
+          <div class="grid grid-cols-2 gap-3">
+            <UInput v-model.trim="form.clasificacion" placeholder="Clasificación" />
+            <UInput v-model.number="form.duracion" type="number" placeholder="Duración (min)" />
+          </div>
+          <UTextarea v-model.trim="form.sinopsis" placeholder="Sinopsis" :rows="4" />
+
+          <label class="inline-flex items-center gap-2 text-sm pt-1">
+            <UCheckbox v-model="form.activo" /> Activo en cartelera
+          </label>
+        </form>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton
+            label="Cancelar"
+            variant="subtle"
+            color="neutral"
+            @click="openEdit = false"
+          />
+          <UButton
+            label="Guardar"
+            color="primary"
+            @click="saveEdit"
+          />
+        </div>
+      </template>
+    </UModal>
+  </section>
+</template>
