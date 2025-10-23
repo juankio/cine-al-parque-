@@ -2,9 +2,11 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   srcDir: '.',
   ssr: false,
-  modules: ['@nuxtjs/tailwindcss', '@pinia/nuxt', '@vite-pwa/nuxt', '@nuxtjs/color-mode'],
-  tailwindcss: { viewer: false },
-  css: ['~/assets/css/tailwind.css'],
+
+  modules: ['@pinia/nuxt', '@vite-pwa/nuxt', '@nuxtjs/color-mode', '@nuxt/ui'],
+
+  css: ['~/assets/css/main.css'],
+
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
@@ -20,6 +22,7 @@ export default defineNuxtConfig({
       ]
     }
   },
+
   runtimeConfig: {
     mongodbUri: process.env.MONGODB_URI || '',
     authSecret: process.env.AUTH_SECRET || '',
@@ -27,17 +30,22 @@ export default defineNuxtConfig({
     holdsTtlMinutes: process.env.HOLDS_TTL_MIN || '10',
     public: {}
   },
+
   app: {
     head: {
       title: 'Cine al Parque',
       meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }]
     }
   },
+
   colorMode: {
-    classSuffix: '',        // usa .dark en <html>
     preference: 'system',
     fallback: 'light',
-    storageKey: 'cine-color-scheme'
+    classSuffix: '' // ← pone la clase 'dark' en <html>
+  },
+  postcss: {
+    plugins: {
+      '@tailwindcss/postcss': {} // ← v4 usa ESTE nombre, no "tailwindcss"
+    }
   }
-
 })

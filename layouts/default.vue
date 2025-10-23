@@ -1,12 +1,10 @@
-
 <template>
-  <div class="min-h-screen bg-surface text-foreground">
-    <Navbar />
-    <main class="mx-auto w-full max-w-6xl px-4 py-8">
-      <slot />
-    </main>
-  </div>
+  <UApp>
+    <div class="min-h-screen bg-surface text-foreground transition-colors">
+      <Navbar />
+      <UContainer class="py-8">
+        <slot />
+      </UContainer>
+    </div>
+  </UApp>
 </template>
-<script setup lang="ts">
-import Navbar from '~/components/Navbar.vue'
-</script>

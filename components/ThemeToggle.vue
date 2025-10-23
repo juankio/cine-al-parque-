@@ -1,19 +1,17 @@
 <template>
-  <button
-    class="flex items-center gap-2 border border-theme rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-ferrari-red/10 transition"
-    @click="toggle"
-  >
-    <span v-if="isDark">🌞 </span>
-    <span v-else>🌙 </span>
-  </button>
+  <UToggle
+    v-model="isDark"
+    on-icon="i-heroicons-moon-20-solid"
+    off-icon="i-heroicons-sun-20-solid"
+    size="lg"
+    color="primary"
+  />
 </template>
 
-<script setup lang="ts">
-import { useColorMode } from '@vueuse/core'
-
-const mode = useColorMode() // usa localStorage y clase .dark en html
-const isDark = computed(() => mode.value === 'dark')
-const toggle = () => {
-  mode.value = isDark.value ? 'light' : 'dark'
-}
+<script setup>
+const colorMode = useColorMode()
+const isDark = computed({
+  get: () => colorMode.preference === 'dark',
+  set: (v) => (colorMode.preference = v ? 'dark' : 'light')
+})
 </script>

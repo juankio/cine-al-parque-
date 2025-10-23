@@ -1,33 +1,64 @@
 <template>
-  <section class="mx-auto max-w-6xl p-4 space-y-6">
+  <UContainer class="py-6">
     <!-- Hero / Encabezado -->
-    <header class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+    <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-4">
       <div>
-        <h1 class="text-2xl font-extrabold tracking-tight text-foreground">Cartelera</h1>
+        <h1 class="text-2xl font-extrabold tracking-tight">Cartelera</h1>
         <p class="text-sm text-neutral-500 dark:text-neutral-400">Elige tu película y reserva tus sillas</p>
       </div>
 
       <!-- Buscador -->
       <div class="flex items-center gap-2">
-        <input
+        <UInput
           v-model.trim="q"
           type="search"
           placeholder="Buscar título…"
-          class="w-64 rounded-xl border border-theme bg-surface px-3 py-2 text-sm outline-none focus:ring"
+          icon="i-heroicons-magnifying-glass-20-solid"
+          class="w-64"
         />
-        <button @click="clearQ" v-if="q" class="rounded-xl border border-theme px-3 py-2 text-sm">Limpiar</button>
+        <UButton v-if="q" variant="ghost" color="gray" @click="clearQ">
+          Limpiar
+        </UButton>
       </div>
     </header>
 
-    <!-- Estado -->
-    <div v-if="loading" class="text-neutral-500">Cargando cartelera…</div>
-    <div v-else-if="error" class="text-red-500">{{ error }}</div>
+    <!-- Estado: loading -->
+    <div v-if="loading" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-for="i in 6" :key="i" class="p-4 rounded-2xl border border-default">
+        <div class="flex gap-4">
+          <USkeleton class="h-40 w-28 rounded-xl" />
+          <div class="flex-1 space-y-2">
+            <USkeleton class="h-5 w-2/3" />
+            <USkeleton class="h-4 w-1/2" />
+            <USkeleton class="h-4 w-full" />
+            <USkeleton class="h-4 w-5/6" />
+            <div class="flex gap-2 pt-2">
+              <USkeleton class="h-7 w-20" />
+              <USkeleton class="h-7 w-24" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado: error -->
+    <UAlert
+      v-else-if="error"
+      color="gray"
+      variant="soft"
+      icon="i-heroicons-exclamation-triangle"
+      :description="error"
+      title="No se pudo cargar la cartelera"
+      class="mb-4"
+    />
 
     <!-- Lista -->
     <div v-else>
-      <div v-if="filtered.length === 0" class="text-neutral-500">No hay películas que coincidan.</div>
+      <div v-if="filtered.length === 0" class="text-neutral-500">
+        No hay películas que coincidan.
+      </div>
 
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MovieCard
           v-for="m in filtered"
           :key="m.id"
@@ -36,15 +67,14 @@
         />
       </div>
     </div>
-  </section>
+  </UContainer>
 </template>
 
-<script setup lang="ts">
-import { onMounted, computed, ref } from 'vue'
+<script setup>
 import MovieCard from '~/components/MovieCard.vue'
 import { useMovies } from '~/composables/useMovies'
 
-definePageMeta({ ssr: false }) // en público normalmente puede ser SSR:true; si prefieres, quítalo
+definePageMeta({ ssr: false })
 
 const { movies, loading, error, fetchMovies, fetchShowtimes, upcomingShowtimes } = useMovies()
 const q = ref('')
@@ -55,14 +85,12 @@ const filtered = computed(() => {
   return (movies.value || []).filter(m => m.titulo.toLowerCase().includes(term))
 })
 
-function clearQ() {
+function clearQ () {
   q.value = ''
 }
 
-// Carga cartelera + precarga de horarios por película (en paralelo, sin bloquear UI)
 onMounted(async () => {
   const list = await fetchMovies()
-  // Pre-cargar horarios de todas (dispara en paralelo pero no esperamos a todas)
   list.forEach(m => { fetchShowtimes(m.id).catch(() => {}) })
 })
 </script>

@@ -4,9 +4,14 @@ await initialize()
 </script>
 
 <template>
-  <div class="min-h-dvh bg-white text-gray-900 dark:bg-gray-900 dark:text-white transition-colors">
-    <NuxtLayout>
-      <NuxtPage />
-    </NuxtLayout>
-  </div>
+  <UApp>
+    <!-- ColorScheme se asegura de aplicar la clase 'dark' en <html> al hidratar -->
+    <ColorScheme placeholder=" ">
+      <div class="min-h-dvh bg-surface text-foreground transition-colors duration-300">
+        <NuxtLayout>
+          <NuxtPage />
+        </NuxtLayout>
+      </div>
+    </ColorScheme>
+  </UApp>
 </template>
