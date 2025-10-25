@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from '#imports'
-import SeatTable from '~/components/SeatTable.vue'
+import SeatTable from '~/components/public/SeatTable.vue'
 import { useShowtimeLayout } from '~/composables/useShowtimeLayout'
 
 definePageMeta({ ssr: false })
@@ -17,7 +17,7 @@ const {
 
 onMounted(() => {
   fetchLayout()
-  startAutoRefresh(10000)
+  startAutoRefresh(10_000)
 })
 onBeforeUnmount(stopAutoRefresh)
 
@@ -32,38 +32,25 @@ watch(reserveMode, (on) => {
 async function onReserve () {
   reserving.value = true
   // Simulación de reserva (demo)
-  await new Promise(r => setTimeout(r, 1000))
+  await new Promise(r => setTimeout(r, 800))
   alert(`Reservar (demo): ${selectionList.value.join(', ')}`)
   reserving.value = false
 }
 </script>
 
 <template>
-  <section class="mx-auto max-w-6xl space-y-6 p-4">
-    <!-- Header -->
-    <header class="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-extrabold">Selecciona tus sillas</h1>
-        <p class="text-sm text-muted">
-          Total: {{ totalSeats }} · Ocupadas: {{ takenSeats }} · Libres: {{ freeSeats }}
-        </p>
-      </div>
+  <UContainer class="py-8 space-y-6">
+    <!-- Header compacto con stats + acciones -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <ReservationHeader
+        :total="totalSeats"
+        :taken="takenSeats"
+        :free="freeSeats"
+      />
 
       <div class="flex items-center gap-3">
-        <!-- 🔘 Switch de reserva (ON/OFF) -->
-        <div class="flex items-center gap-2">
-  <USwitch
-    v-model="reserveMode"
-    size="lg"
-    color="primary"
-    on-icon="i-heroicons-check-circle"
-    off-icon="i-heroicons-eye-slash"
-    :aria-label="reserveMode ? 'Modo reserva activo' : 'Modo vista'"
-  />
-  <span class="text-sm font-medium">
-    {{ reserveMode ? 'Modo reserva activo' : 'Modo vista' }}
-  </span>
-</div>
+        <!-- Toggle de reserva reutilizable -->
+        <SwitchReserve v-model="reserveMode" />
 
         <!-- Botón refrescar -->
         <UButton variant="outline" color="gray" size="sm" @click="fetchLayout">
@@ -81,7 +68,7 @@ async function onReserve () {
           {{ reserving ? 'Reservando…' : `Reservar (${selectionList.length})` }}
         </UButton>
       </div>
-    </header>
+    </div>
 
     <!-- Estado: cargando -->
     <div v-if="loading" class="grid gap-3">
@@ -102,10 +89,7 @@ async function onReserve () {
     />
 
     <!-- Sin layout -->
-    <UCard
-      v-else-if="tables.length === 0"
-      class="p-4 text-muted"
-    >
+    <UCard v-else-if="tables.length === 0" class="p-4 text-muted">
       <p>No hay layout para este showtime (o aún no se ha generado).</p>
       <div class="mt-2 text-xs opacity-80 space-y-1">
         <div><b>ID:</b> {{ showtimeId }}</div>
@@ -125,12 +109,12 @@ async function onReserve () {
       />
     </div>
 
-    <!-- Debug -->
+    <!-- Debug (plegado) -->
     <UCard class="p-0">
       <details class="p-4 text-xs opacity-80">
         <summary>Debug</summary>
         <pre class="mt-2 whitespace-pre-wrap">{{ lastPayload }}</pre>
       </details>
     </UCard>
-  </section>
+  </UContainer>
 </template>

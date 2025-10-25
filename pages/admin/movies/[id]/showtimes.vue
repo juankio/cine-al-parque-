@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted, watchEffect, watch } from 'vue'
+import { reactive, ref, computed, watchEffect } from 'vue'
 import { useRoute, navigateTo } from '#imports'
 import { useAdminShowtimes } from '~/composables/admin/useAdminShowtimes'
 
@@ -13,19 +13,17 @@ const movieId = computed<string | null>(() => {
 
 const { list, loading, error, fetchShowtimes, createShowtime, removeShowtime, generateLayout } = useAdminShowtimes()
 
-// ---- Form principal
-const form = reactive<{ fechaHora: string; sala: string; price: number }>({
-  fechaHora: '',
-  sala: '',
-  price: 0
+const form = reactive<{ fechaHora: string; sala: string; price: number }>({ fechaHora: '', sala: '', price: 0 })
+
+const calendarOpen = ref(false)
+const dateStr = ref('')
+const timeStr = ref('')
+
+watchEffect(async () => {
+  if (!movieId.value) return
+  await fetchShowtimes(movieId.value, { page: 1, pageSize: 50, upcoming: true })
 })
 
-// ---- Picker elegante (popover + date+time) — sin UCalendar
-const calendarOpen = ref(false)
-const dateStr = ref('')   // YYYY-MM-DD
-const timeStr = ref('')   // HH:mm
-
-// Inicializa cuando abres por primera vez
 watch(calendarOpen, (open) => {
   if (open && (!dateStr.value || !timeStr.value)) {
     const now = new Date()
@@ -39,35 +37,21 @@ watch(calendarOpen, (open) => {
   }
 })
 
-// Label amigable para mostrar en el botón
 const fechaHoraLabel = computed(() => {
   if (!form.fechaHora) return ''
   const d = new Date(form.fechaHora)
-  return isNaN(+d) ? '' : d.toLocaleString()
+  return isNaN(+d) ? '' : d.toLocaleString('es-CO')
 })
 
-// Aplica YYYY-MM-DD + HH:mm → form.fechaHora
 function applyDateTime() {
   if (!dateStr.value || !timeStr.value) return
   form.fechaHora = `${dateStr.value}T${timeStr.value}`
   calendarOpen.value = false
 }
 
-// ---- Carga de funciones
-watchEffect(async () => {
-  if (!movieId.value) return
-  await fetchShowtimes(movieId.value, { page: 1, pageSize: 50, upcoming: true })
-})
+const fmtDateTime = (iso?: string) => iso ? new Date(iso).toLocaleString('es-CO') : '—'
+const fmtMoney = (n?: number) => (typeof n === 'number' ? n : 0).toLocaleString('es-CO')
 
-// Helpers display
-const fmtDateTime = (iso?: string) => {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  return isNaN(+d) ? '—' : d.toLocaleString()
-}
-const fmtMoney = (n?: number) => typeof n === 'number' ? n.toLocaleString('es-CO') : '0'
-
-// Crear → agrega y (opcional) navega al editor de layout
 const AUTO_GO_TO_LAYOUT = true
 async function create() {
   if (!movieId.value) return
@@ -85,36 +69,26 @@ async function create() {
   timeStr.value = ''
 
   if (created?._id) {
-    if (AUTO_GO_TO_LAYOUT) {
-      await navigateTo(`/admin/showtimes/${created._id}/layout`)
-    } else {
-      await generateLayout(created._id)
-    }
+    if (AUTO_GO_TO_LAYOUT) navigateTo(`/admin/showtimes/${created._id}/layout`)
+    else await generateLayout(created._id)
   }
 }
 
 async function del(id: string) {
   if (!movieId.value) return
-  if (!confirm('¿Eliminar función?')) return
   await removeShowtime(id)
+  await fetchShowtimes(movieId.value, { page: 1, pageSize: 50, upcoming: true })
 }
 </script>
 
 <template>
-  <section class="space-y-5">
-    <!-- Header -->
-    <header class="flex items-end justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-bold">Funciones</h1>
-        <p class="text-sm text-muted">Crea funciones y configura el layout de sillas.</p>
-      </div>
+  <UContainer class="py-6 space-y-5">
+    <PageHeader title="Funciones" subtitle="Crea funciones y configura el layout de sillas.">
+      <template #actions>
+        <UButton to="/admin/movies" variant="outline" color="gray" size="sm">← Volver</UButton>
+      </template>
+    </PageHeader>
 
-      <UButton to="/admin/movies" variant="outline" color="gray" size="sm">
-        ← Volver
-      </UButton>
-    </header>
-
-    <!-- Falta movieId -->
     <UAlert
       v-if="!movieId"
       color="gray"
@@ -125,10 +99,9 @@ async function del(id: string) {
     />
 
     <template v-else>
-      <!-- Form crear -->
-      <div class="rounded-2xl border border-default bg-default p-4">
+      <!-- Crear -->
+      <UCard class="p-4">
         <form @submit.prevent="create" class="grid gap-3 md:grid-cols-4">
-          <!-- Fecha y hora (popover con inputs bonitos) -->
           <UPopover v-model:open="calendarOpen">
             <UButton
               block
@@ -138,11 +111,8 @@ async function del(id: string) {
               icon="i-heroicons-calendar-days-20-solid"
               :aria-label="fechaHoraLabel || 'Fecha y hora…'"
             >
-              <span class="truncate">
-                {{ fechaHoraLabel || 'Fecha y hora…' }}
-              </span>
+              <span class="truncate">{{ fechaHoraLabel || 'Fecha y hora…' }}</span>
             </UButton>
-
             <template #content>
               <div class="p-3 w-72 space-y-3">
                 <UInput v-model="dateStr" type="date" />
@@ -157,13 +127,11 @@ async function del(id: string) {
 
           <UInput v-model.trim="form.sala" placeholder="Sala" />
           <UInput v-model.number="form.price" type="number" min="0" placeholder="Precio" />
-          <UButton type="submit" color="primary">
-            Crear función
-          </UButton>
+          <UButton type="submit" color="primary">Crear función</UButton>
         </form>
-      </div>
+      </UCard>
 
-      <!-- Loading -->
+      <!-- Estado -->
       <div v-if="loading" class="grid gap-3">
         <div v-for="i in 4" :key="i" class="rounded-2xl border border-default p-4">
           <div class="flex items-center justify-between">
@@ -180,7 +148,6 @@ async function del(id: string) {
         </div>
       </div>
 
-      <!-- Error -->
       <UAlert
         v-else-if="error"
         color="gray"
@@ -192,10 +159,10 @@ async function del(id: string) {
 
       <!-- Lista -->
       <div v-else class="grid gap-3">
-        <div
+        <ItemCard
           v-for="s in list"
           :key="s._id"
-          class="rounded-2xl border border-default bg-default p-4 flex items-center justify-between"
+          class="p-4 flex items-center justify-between"
         >
           <div>
             <p class="font-semibold">{{ fmtDateTime(s.fechaHora) }}</p>
@@ -219,7 +186,7 @@ async function del(id: string) {
               variant="outline"
               color="gray"
             >
-              Ver layout (público)
+              Ver público
             </UButton>
 
             <UButton
@@ -240,12 +207,10 @@ async function del(id: string) {
               title="Eliminar"
             />
           </div>
-        </div>
+        </ItemCard>
 
-        <div v-if="(list?.length || 0) === 0" class="text-muted">
-          Sin funciones aún.
-        </div>
+        <EmptyState v-if="(list?.length || 0) === 0" description="Sin funciones aún." />
       </div>
     </template>
-  </section>
+  </UContainer>
 </template>

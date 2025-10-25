@@ -25,7 +25,6 @@ const { loading, error, generate, setActive } = useAdminLayout()
 const rows = ref(6)
 const cols = ref(6)
 const replace = ref(true)
-const prefix = ref('M')
 
 // patrón 2/4
 const pattern = ref<PatternCell[][]>([])
@@ -62,7 +61,7 @@ async function onGenerate() {
     const fallbackSeats = pattern.value.flat().reduce((acc, cell) => acc + (cell === '4' ? 4 : 2), 0)
 
     msg.value = `Layout generado: ${tables || fallbackTables} mesas / ${seats || fallbackSeats} sillas`
-  } catch (e) {}
+  } catch {}
 }
 
 async function onToggleActive() {
@@ -76,9 +75,9 @@ const fmtMoney = (n?: number) => typeof n === 'number' ? n.toLocaleString('es-CO
 </script>
 
 <template>
-  <section class="space-y-5">
+  <UContainer class="py-6 space-y-5">
     <!-- Header -->
-    <header class="flex items-end justify-between gap-3">
+    <div class="flex items-end justify-between gap-3">
       <div>
         <h1 class="text-2xl font-bold">Layout de sillas</h1>
         <p class="text-sm text-muted">Define mesas de 2 o 4 puestos por celda y genera el layout.</p>
@@ -94,81 +93,54 @@ const fmtMoney = (n?: number) => typeof n === 'number' ? n.toLocaleString('es-CO
       </div>
 
       <div class="flex items-center gap-2">
-        <UButton
-          :to="`/admin/movies/${showtime?.movieId || ''}/showtimes`"
-          color="gray"
-          variant="outline"
-          size="sm"
-        >
+        <UButton :to="`/admin/movies/${showtime?.movieId || ''}/showtimes`" color="gray" variant="outline" size="sm">
           ← Volver
         </UButton>
-        <UButton
-          :to="`/showtimes/${showtimeId}`"
-          color="primary"
-          variant="outline"
-          size="sm"
-        >
+        <UButton :to="`/showtimes/${showtimeId}`" color="primary" variant="outline" size="sm">
           Ver público
         </UButton>
       </div>
-    </header>
+    </div>
 
     <!-- Controles -->
     <UCard class="p-4">
-      <div class="grid gap-3 md:grid-cols-6">
-        <UFormGroup label="Filas" class="flex items-center gap-2 text-sm">
+      <div class="grid gap-3 md:grid-cols-6 items-center">
+        <UFormGroup label="Filas">
           <UInput v-model.number="rows" type="number" min="1" max="20" class="w-24" />
         </UFormGroup>
 
-        <UFormGroup label="Columnas" class="flex items-center gap-2 text-sm">
+        <UFormGroup label="Columnas">
           <UInput v-model.number="cols" type="number" min="1" max="20" class="w-24" />
         </UFormGroup>
 
         <UCheckbox v-model="replace" label="Reemplazar layout" />
 
-        <div class="text-xs text-muted self-center">
+        <div class="text-xs text-muted md:col-span-2">
           <span class="inline-block rounded-lg border border-default px-2 py-1">2</span> =
           mesa de 2 &nbsp;·&nbsp;
-          <span class="inline-block rounded-lg border border-primary px-2 py-1 text-primary">4</span>
-          = mesa de 4
+          <span class="inline-block rounded-lg border border-primary px-2 py-1 text-primary">4</span> =
+          mesa de 4
         </div>
 
-        <UButton
-          label="Reset patrón"
-          variant="outline"
-          color="gray"
-          @click="initPattern"
-        />
-        <UButton
-          :label="showtime?.active ? 'Desactivar showtime' : 'Activar showtime'"
-          :color="showtime?.active ? 'red' : 'primary'"
-          variant="outline"
-          @click="onToggleActive"
-        />
+        <div class="flex gap-2 justify-end md:col-span-6">
+          <UButton label="Reset patrón" variant="outline" color="gray" @click="initPattern" />
+          <UButton
+            :label="showtime?.active ? 'Desactivar showtime' : 'Activar showtime'"
+            :color="showtime?.active ? 'red' : 'primary'"
+            variant="outline"
+            @click="onToggleActive"
+          />
+        </div>
       </div>
     </UCard>
 
-    <!-- Editor de grilla -->
-    <UCard>
-      <p class="mb-3 text-xs text-muted">
-        Click en cada celda para alternar entre mesas de <b>2</b> y <b>4</b>.
-      </p>
-
-      <div
-        class="inline-grid gap-2"
-        :style="{ gridTemplateColumns: `repeat(${cols}, minmax(48px, 1fr))` }"
-      >
-        <UButton
-          v-for="(cell, idx) in rows * cols"
-          :key="idx"
-          :label="pattern[Math.floor(idx / cols)][idx % cols]"
-          :variant="pattern[Math.floor(idx / cols)][idx % cols] === '4' ? 'outline' : 'soft'"
-          :color="pattern[Math.floor(idx / cols)][idx % cols] === '4' ? 'primary' : 'gray'"
-          class="h-12 text-sm font-semibold"
-          @click="toggleCell(Math.floor(idx / cols), idx % cols)"
-        />
-      </div>
-    </UCard>
+    <!-- Editor grilla (reutilizable) -->
+    <AdminGridLayout
+      :rows="rows"
+      :cols="cols"
+      :pattern="pattern"
+      @toggle="toggleCell"
+    />
 
     <!-- Acciones -->
     <div class="flex items-center gap-3">
@@ -181,5 +153,5 @@ const fmtMoney = (n?: number) => typeof n === 'number' ? n.toLocaleString('es-CO
       <span v-if="error" class="text-red-500 text-sm">{{ error }}</span>
       <span v-if="msg" class="text-primary text-sm">{{ msg }}</span>
     </div>
-  </section>
+  </UContainer>
 </template>

@@ -43,6 +43,15 @@ export default defineNuxtConfig({
     fallback: 'light',
     classSuffix: '' // ← pone la clase 'dark' en <html>
   },
+  components: [
+    { path: '~/components', pathPrefix: false },
+    { path: '~/components/base', pathPrefix: false },
+    { path: '~/components/shared', pathPrefix: false },
+    { path: '~/components/boss', pathPrefix: false },
+    { path: '~/components/boss/movies', pathPrefix: false },
+    { path: '~/components/boss/showtimes', pathPrefix: false },
+    { path: '~/components/boss/layout', pathPrefix: false },
+  ],
   postcss: {
     plugins: {
       '@tailwindcss/postcss': {} // ← v4 usa ESTE nombre, no "tailwindcss"

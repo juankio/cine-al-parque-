@@ -10,114 +10,115 @@ onMounted(async () => {
     const redirect = encodeURIComponent('/me')
     return navigateTo(`/login?redirect=${redirect}`)
   }
-  // Carga ambos en paralelo
   await Promise.all([fetchStats(), fetchHistory()])
 })
 
-// Computed seguros
-const items = computed(() => meHistory.value?.items ?? [])
-const visits = computed(() => stats.value?.visits ?? 0)
-const spent = computed(() => stats.value?.totalSpent ?? 0)
+const items   = computed(() => meHistory.value?.items ?? [])
+const visits  = computed(() => stats.value?.visits ?? 0)
+const spent   = computed(() => stats.value?.totalSpent ?? 0)
 const favorite = computed(() => stats.value?.favorite ?? null)
+
+const money = (n: number) => (n || 0).toLocaleString('es-CO')
+
+// badge por estado
+const statusMap: Record<string, { color: 'green'|'yellow'|'gray'|'red'; label: string }> = {
+  paid:     { color: 'green',  label: 'Pagado' },
+  pending:  { color: 'yellow', label: 'Pendiente' },
+  expired:  { color: 'gray',   label: 'Expirado' },
+  canceled: { color: 'red',    label: 'Cancelado' }
+}
+const statusConf = (s?: string) => statusMap[s || ''] || { color: 'gray', label: s || '—' }
 </script>
 
 <template>
-  <section class="p-6 space-y-8">
-    <header>
-      <h2 class="text-2xl font-bold">Mi cuenta</h2>
-      <p class="text-sm text-neutral-400">
-        Bienvenido, {{ user?.name || user?.email }} 👋
-      </p>
-    </header>
+  <UContainer class="py-6 space-y-8">
+    <!-- Header -->
+    <PageHeader
+      title="Mi cuenta"
+      :subtitle="`Bienvenido, ${user?.name || user?.email} 👋`"
+    />
 
-    <!-- STATS -->
-    <div class="grid md:grid-cols-3 gap-4">
-      <div class="rounded-xl border border-theme bg-surface p-4 text-center">
-        <p class="text-sm text-neutral-400">Visitas totales</p>
+    <!-- Stats -->
+    <div class="grid gap-4 md:grid-cols-3">
+      <UCard class="p-4 text-center">
+        <p class="text-sm text-muted">Visitas totales</p>
         <p class="text-2xl font-bold">{{ visits }}</p>
-      </div>
+      </UCard>
 
-      <div class="rounded-xl border border-theme bg-surface p-4 text-center">
-        <p class="text-sm text-neutral-400">Total gastado</p>
-        <p class="text-2xl font-bold">$ {{ spent.toLocaleString('es-CO') }}</p>
-      </div>
+      <UCard class="p-4 text-center">
+        <p class="text-sm text-muted">Total gastado</p>
+        <p class="text-2xl font-bold">$ {{ money(spent) }}</p>
+      </UCard>
 
-      <div
-        v-if="favorite"
-        class="rounded-xl border border-theme bg-surface p-4 text-center"
-      >
-        <p class="text-sm text-neutral-400">Peli favorita</p>
+      <UCard v-if="favorite" class="p-4 text-center">
+        <p class="text-sm text-muted">Peli favorita</p>
         <p class="text-lg font-semibold">{{ favorite.titulo }}</p>
         <img
           :src="favorite.poster || '/placeholder.png'"
           alt=""
-          class="mx-auto mt-2 h-24 w-auto rounded-lg object-cover"
+          class="mx-auto mt-2 h-24 w-auto rounded-lg object-cover border border-default/50"
         />
-      </div>
+      </UCard>
     </div>
 
-    <!-- ERRORES / LOADING -->
-    <div v-if="loading" class="text-neutral-400 text-center">Cargando datos…</div>
-    <div v-else-if="error" class="text-red-500 text-center">{{ error }}</div>
+    <!-- Loading / Error -->
+    <LoadingSkeleton v-if="loading" :rows="3" />
+    <UAlert
+      v-else-if="error"
+      color="gray"
+      variant="soft"
+      icon="i-heroicons-exclamation-triangle"
+      :description="error"
+      title="No se pudieron cargar tus datos"
+    />
 
-    <!-- HISTORIAL -->
-    <div v-else>
-      <h3 class="text-xl font-semibold mt-6 mb-3">Historial de reservas</h3>
-      <div v-if="items.length === 0" class="text-neutral-400 text-center">
-        No tienes reservas todavía.
-      </div>
+    <!-- Historial -->
+    <template v-else>
+      <h3 class="text-xl font-semibold">Historial de reservas</h3>
+
+      <EmptyState
+        v-if="items.length === 0"
+        description="No tienes reservas todavía."
+      />
 
       <div v-else class="grid gap-4">
-        <article
-          v-for="r in items"
-          :key="r.id"
-          class="rounded-xl border border-theme bg-surface p-4"
-        >
-          <div class="flex items-center justify-between">
-            <h3 class="font-semibold">
-              🎬 {{ r.movie?.titulo || 'Sin título' }}
-            </h3>
-            <span
-              class="rounded-md px-2 py-0.5 text-xs font-medium"
-              :class="{
-                'bg-green-500/15 text-green-400': r.status === 'paid',
-                'bg-yellow-500/15 text-yellow-400': r.status === 'pending',
-                'bg-neutral-500/15 text-neutral-400': r.status === 'expired',
-                'bg-red-500/15 text-red-400': r.status === 'canceled'
-              }"
+        <ItemCard v-for="r in items" :key="r.id">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <h4 class="font-semibold truncate">
+                🎬 {{ r.movie?.titulo || 'Sin título' }}
+              </h4>
+              <p class="text-sm text-muted mt-1">
+                Sala {{ r.showtime?.sala || '—' }} —
+                {{ new Date(r.showtime?.fechaHora || Date.now()).toLocaleString('es-CO') }}
+              </p>
+              <p class="text-sm text-muted">Asientos: {{ (r.seats || []).join(', ') || '—' }}</p>
+              <p class="text-sm text-muted">Total: $ {{ money(r.total || 0) }}</p>
+
+              <div v-if="r.cart?.length" class="mt-2 text-sm text-muted">
+                <p>🍔 Comida:</p>
+                <ul class="list-disc ml-5">
+                  <li v-for="(c, i) in r.cart" :key="i">
+                    {{ c.qty }} × {{ c.nombre }} — $ {{ money(c.unitPrice * c.qty) }}
+                  </li>
+                </ul>
+              </div>
+
+              <p v-if="r.status === 'pending' && r.expiresAt" class="text-xs text-muted mt-2">
+                Expira: {{ new Date(r.expiresAt).toLocaleTimeString('es-CO') }}
+              </p>
+            </div>
+
+            <UBadge
+              :color="statusConf(r.status).color"
+              variant="subtle"
+              class="shrink-0"
             >
-              {{ r.status }}
-            </span>
+              {{ statusConf(r.status).label }}
+            </UBadge>
           </div>
-
-          <p class="text-sm text-neutral-500 mt-1">
-            Sala {{ r.showtime?.sala || '—' }} — 
-            {{ new Date(r.showtime?.fechaHora || Date.now()).toLocaleString() }}
-          </p>
-
-          <p class="text-sm text-neutral-500">
-            Asientos: {{ (r.seats || []).join(', ') }}
-          </p>
-
-          <p class="text-sm text-neutral-500">
-            Total: $ {{ (r.total || 0).toLocaleString('es-CO') }}
-          </p>
-
-          <div v-if="r.cart?.length" class="mt-2 text-sm text-neutral-400">
-            <p>🍔 Comida:</p>
-            <ul class="list-disc ml-5">
-              <li v-for="(c, i) in r.cart" :key="i">
-                {{ c.qty }} × {{ c.nombre }} — 
-                $ {{ (c.unitPrice * c.qty).toLocaleString('es-CO') }}
-              </li>
-            </ul>
-          </div>
-
-          <p v-if="r.status === 'pending' && r.expiresAt" class="text-xs text-neutral-500 mt-2">
-            Expira: {{ new Date(r.expiresAt).toLocaleTimeString() }}
-          </p>
-        </article>
+        </ItemCard>
       </div>
-    </div>
-  </section>
+    </template>
+  </UContainer>
 </template>

@@ -1,45 +1,42 @@
-<template>
-  <section class="space-y-3">
-    <h1 class="text-2xl font-bold">Admin · Dashboard</h1>
-    <p class="text-muted">Gestiona cartelera, funciones y KPI.</p>
-
-    <div class="grid gap-3 md:grid-cols-3">
-      <UButton
-        to="/admin/movies"
-        block
-        size="lg"
-        variant="soft"
-        color="primary"
-        class="justify-start rounded-xl py-6"
-      >
-        <span class="text-xl mr-2">🎬</span> Películas
-      </UButton>
-
-      <UButton
-        to="/admin/showtimes"
-        block
-        size="lg"
-        variant="soft"
-        color="primary"
-        class="justify-start rounded-xl py-6"
-      >
-        <span class="text-xl mr-2">🕒</span> Funciones
-      </UButton>
-
-      <UButton
-        to="/admin/kpi"
-        block
-        size="lg"
-        variant="soft"
-        color="primary"
-        class="justify-start rounded-xl py-6"
-      >
-        <span class="text-xl mr-2">📈</span> KPI
-      </UButton>
-    </div>
-  </section>
-</template>
-
 <script setup>
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 </script>
+
+<template>
+  <UContainer class="py-6 space-y-4">
+    <PageHeader
+      title="Admin · Dashboard"
+      subtitle="Gestiona cartelera, funciones y KPI."
+    />
+
+    <div class="grid gap-4 md:grid-cols-3">
+  <NuxtLink to="/admin/movies">
+    <UCard class="p-6 hover:bg-primary/5 transition rounded-2xl cursor-pointer">
+      <div class="flex items-center text-lg font-semibold">
+        <span class="text-2xl mr-3">🎬</span> Películas
+      </div>
+      <p class="text-sm text-muted mt-1">Administra la cartelera</p>
+    </UCard>
+  </NuxtLink>
+
+  <NuxtLink to="/admin/showtimes">
+    <UCard class="p-6 hover:bg-primary/5 transition rounded-2xl cursor-pointer">
+      <div class="flex items-center text-lg font-semibold">
+        <span class="text-2xl mr-3">🕒</span> Funciones
+      </div>
+      <p class="text-sm text-muted mt-1">Crea horarios y gestiona salas</p>
+    </UCard>
+  </NuxtLink>
+
+  <NuxtLink to="/admin/kpi">
+    <UCard class="p-6 hover:bg-primary/5 transition rounded-2xl cursor-pointer">
+      <div class="flex items-center text-lg font-semibold">
+        <span class="text-2xl mr-3">📈</span> KPI
+      </div>
+      <p class="text-sm text-muted mt-1">Métricas clave del cine</p>
+    </UCard>
+  </NuxtLink>
+</div>
+
+  </UContainer>
+</template>
