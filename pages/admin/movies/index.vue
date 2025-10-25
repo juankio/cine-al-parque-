@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import AdminMovieForm from '~/components/boss/AdminFormMovie.vue'
+import AdminMovieForm from '~/components/boss/shared/AdminFormMovie.vue'
 import { useAdminMovies, type AdminMovie } from '~/composables/admin/useAdminMovies'
 
 definePageMeta({ layout: 'admin', middleware: ['admin'] })

@@ -48,9 +48,7 @@ export default defineNuxtConfig({
     { path: '~/components/base', pathPrefix: false },
     { path: '~/components/shared', pathPrefix: false },
     { path: '~/components/boss', pathPrefix: false },
-    { path: '~/components/boss/movies', pathPrefix: false },
-    { path: '~/components/boss/showtimes', pathPrefix: false },
-    { path: '~/components/boss/layout', pathPrefix: false },
+
   ],
   postcss: {
     plugins: {

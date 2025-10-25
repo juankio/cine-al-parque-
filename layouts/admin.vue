@@ -1,6 +1,6 @@
 <script setup>
 import Navbar from '~/components/Navbar.vue'
-import BossNav from '~/components/boss/AdminNav.vue'
+import BossNav from '~/components/boss/shared/AdminNav.vue'
 </script>
 
 <template>
