@@ -1,3 +1,4 @@
+// ~/server/models/Ingredient.ts
 import pkg from 'mongoose'
 const { Schema, model, models } = pkg
 
@@ -17,14 +18,15 @@ const IngredientSchema = new Schema({
     nombre: { type: String, required: true, trim: true, unique: true },
     unidad: { type: String, required: true, enum: ['g', 'kg', 'ml', 'l', 'unid'], default: 'unid' },
 
-    // derivados (automáticos)
+    // derivados
     unidadBase: { type: String, enum: ['g', 'ml', 'unid'], default: 'unid' },
     tipo: { type: String, enum: ['peso', 'volumen', 'unidad'], default: 'unidad' },
     factorAUnidadBase: { type: Number, default: 1 },
 
-    // ¡Nuevos!
-    stockBase: { type: Number, default: 0 },        // en g / ml / unid
-    costoPromedio: { type: Number, default: 0 }     // $ por unidad base (g/ml/unid)
+    // campos nuevos
+    stockBase: { type: Number, default: 0 },
+    costoPromedio: { type: Number, default: 0 },
+    activo: { type: Boolean, default: true }
 }, { timestamps: true })
 
 IngredientSchema.pre('validate', function (next) {

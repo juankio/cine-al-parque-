@@ -1,11 +1,14 @@
 <script setup lang="ts">
-definePageMeta({ layout: 'admin', middleware: ['admin'] })
+definePageMeta({ layout: 'admin', middleware: ['admin'], ssr: false })
 
+import { ref, reactive, computed, onMounted, toRaw, nextTick } from 'vue'
 import AdminIngredientForm from '~/components/boss/ingredients/AdminIngredientForm.vue'
 import AdminIngredientList from '~/components/boss/ingredients/AdminIngredientList.vue'
 import AdminHeader from '~/components/boss/shared/AdminHeader.vue'
 import ConfirmDeleteModal from '~/components/shared/ConfirmDeleteModal.vue'
 import { useAdminIngredients } from '~/composables/admin/useAdminIngredients'
+
+const toast = useToast()
 
 const {
   list, loading, error,
@@ -13,20 +16,21 @@ const {
   updateIngredient, removeIngredient
 } = useAdminIngredients()
 
+// -------- estado
 const q = ref('')
 const openPanel = ref(false)
 const isEditing = ref(false)
-
 const openDelete = ref(false)
 const toDelete = ref<any>(null)
 const currentId = ref<string | null>(null)
 
+// formulario desacoplado del item
 const form = reactive({
   nombre: '',
-  unidad: 'und',
+  unidad: 'unid',
   stock: 0,
   costoUnitario: 0,
-  activo: true // visual, no se envía
+  activo: true
 })
 
 onMounted(() => fetchIngredients(1, 50))
@@ -34,61 +38,80 @@ onMounted(() => fetchIngredients(1, 50))
 const filtered = computed(() => {
   const term = q.value.toLowerCase()
   const items = list.value?.items ?? []
-  return term ? items.filter(i => (i?.nombre ?? '').toLowerCase().includes(term)) : items
+  return term ? items.filter(i => i.nombre?.toLowerCase().includes(term)) : items
 })
 
-function resetForm () {
-  Object.assign(form, { nombre: '', unidad: 'und', stock: 0, costoUnitario: 0, activo: true })
-}
-
-function startCreate () {
-  resetForm()
+function startCreate() {
   currentId.value = null
   isEditing.value = false
+  Object.assign(form, { nombre: '', unidad: 'unid', stock: 0, costoUnitario: 0, activo: true })
   openPanel.value = true
 }
 
-function startEdit (ing: any) {
-  Object.assign(form, {
-    nombre: ing?.nombre ?? '',
-    unidad: ing?.unidad ?? 'und',
-    stock: Number(ing?.stock ?? 0),
-    costoUnitario: Number(ing?.costoUnitario ?? 0),
-    activo: (ing?.activo ?? true)
-  })
+function startEdit(ing: any) {
   currentId.value = ing._id
   isEditing.value = true
-  openPanel.value = true
-}
-
-async function save () {
-  // Solo manda lo que tu backend acepta
-  const payload = {
-    nombre: form.nombre,
-    unidad: form.unidad,
-    stock: Number(form.stock || 0),
-    costoUnitario: Number(form.costoUnitario || 0)
-  }
-
-  if (isEditing.value && currentId.value) {
-    await updateIngredient(currentId.value, payload)
-  } else {
-    await createIngredient(payload)
-  }
+  // mapear de API → form local
+  Object.assign(form, {
+    nombre: ing.nombre ?? '',
+    unidad: ing.unidad ?? 'unid',
+    stock: Number(ing.stockBase ?? 0),
+    costoUnitario: Number(ing.costoPromedio ?? 0),
+    activo: !!ing.activo
+  })
+  // cambiar key: fuerza remount del contenido del slideover y evita “datos pegados”
   openPanel.value = false
-  await fetchIngredients(1, 50)
+  nextTick(() => { openPanel.value = true })
 }
 
-function askDelete (ing: any) {
+async function save() {
+  try {
+    const raw = toRaw(form)
+    // form → payload API
+    const payload = {
+      nombre: raw.nombre,
+      unidad: raw.unidad,
+      stockBase: Number(raw.stock) || 0,
+      costoPromedio: Number(String(raw.costoUnitario).replace(',', '.')) || 0,
+      activo: !!raw.activo
+    }
+
+    if (isEditing.value && currentId.value) {
+      await updateIngredient(currentId.value, payload)
+      toast.add({ title: 'Ingrediente actualizado', color: 'success' })
+    } else {
+      await createIngredient(payload)
+      toast.add({ title: 'Ingrediente creado', color: 'success' })
+    }
+
+    // refresca lista y cierra cuando el DOM ya procesó
+    await fetchIngredients(1, 50, q.value || '')
+    openPanel.value = false
+  } catch (e: any) {
+    console.error('[ING] save error', e)
+    toast.add({ title: e?.data?.message || e?.message || 'Error al guardar', color: 'error' })
+  }
+}
+
+async function toggleActivo(ing: any) {
+  try {
+    await updateIngredient(ing._id, { activo: !ing.activo })
+    await fetchIngredients(1, 50, q.value || '')
+  } catch (e) {
+    toast.add({ title: 'No se pudo actualizar el estado', color: 'error' })
+  }
+}
+
+function askDelete(ing: any) {
   toDelete.value = ing
   openDelete.value = true
 }
 
-async function doDelete () {
+async function doDelete() {
   if (!toDelete.value) return
   await removeIngredient(toDelete.value._id)
   openDelete.value = false
-  await fetchIngredients(1, 50)
+  await fetchIngredients(1, 50, q.value || '')
 }
 </script>
 
@@ -118,87 +141,32 @@ async function doDelete () {
       :loading="loading"
       :error="error"
       @select="startEdit"
+      @toggle="toggleActivo"
       @delete="askDelete"
     />
 
-   <!-- Panel lateral (crear/editar) -->
-<USlideover
-  v-model:open="openPanel"
-  side="right"
-  :ui="{
-    overlay: 'bg-black/40',
-    content: 'max-w-md p-0 bg-default',   // sin padding extra, ancho cómodo
-    container: 'p-0'
-  }"
->
-  <!-- Title/description accesibles -->
-  <template #title>
-    {{ isEditing ? 'Editar ingrediente' : 'Nuevo ingrediente' }}
-  </template>
-  <template #description>
-    Completa los campos y guarda los cambios.
-  </template>
+    <!-- Slideover accesible + con keys para remount -->
+    <USlideover
+      v-model:open="openPanel"
+      :title="isEditing ? 'Editar ingrediente' : 'Nuevo ingrediente'"
+      :description="isEditing ? 'Modifica los datos y guarda los cambios.' : 'Completa los campos y crea el ingrediente.'"
+      side="right"
+      :ui="{ footer: 'justify-end' }"
+      :key="(currentId || 'new') + ':' + (isEditing?1:0) + ':' + (openPanel?1:0)"
+      class="max-w-md"
+    >
+      <template #body>
+        <div class="p-4 space-y-5">
+          <!-- key interno adicional para que el form siempre reciba el nuevo model -->
+          <AdminIngredientForm :key="(currentId || 'new') + ':' + isEditing" v-model="form" />
+        </div>
+      </template>
 
-  <!-- Contenido del panel -->
-  <template #content>
-    <div class="flex h-full flex-col">
-      <!-- Header visual del panel -->
-      <div class="px-5 py-4 border-b border-default">
-        <h3 class="text-base font-semibold">
-          {{ isEditing ? 'Editar ingrediente' : 'Nuevo ingrediente' }}
-        </h3>
-        <p class="text-sm text-muted">Completa los campos y guarda los cambios.</p>
-      </div>
-
-      <!-- Body scrollable -->
-      <div class="flex-1 overflow-y-auto px-5 py-4">
-        <form class="grid gap-4 md:grid-cols-2" @submit.prevent="save">
-          <UFormField label="Nombre del ingrediente" class="md:col-span-2">
-            <UInput v-model.trim="form.nombre" />
-          </UFormField>
-
-          <UFormField label="Unidad">
-            <USelect
-              v-model="form.unidad"
-              :items="[
-                { label: 'Unidad', value: 'unid' },
-                { label: 'Litro',  value: 'l' },
-                { label: 'Kilogramo', value: 'kg' }
-              ]"
-            />
-          </UFormField>
-
-          <UFormField label="Costo unitario">
-            <UInput v-model.number="form.costoUnitario" type="number" min="0" />
-          </UFormField>
-
-          <UFormField label="Stock" class="md:col-span-2">
-            <UInput v-model.number="form.stock" type="number" min="0" />
-          </UFormField>
-
-          <div class="md:col-span-2">
-            <USwitch v-model="form.activo" label="Activo" />
-          </div>
-        </form>
-      </div>
-
-      <!-- Footer sticky -->
-      <div class="sticky bottom-0 border-t border-default bg-default/80 backdrop-blur px-5 py-3 flex justify-end gap-2">
-        <UButton
-          label="Cerrar"
-          variant="subtle"
-          color="neutral"
-          @click="openPanel = false"
-        />
-        <UButton
-          :label="isEditing ? 'Guardar' : 'Crear'"
-          color="primary"
-          @click="save"
-        />
-      </div>
-    </div>
-  </template>
-</USlideover>
+      <template #footer>
+        <UButton label="Cerrar" color="neutral" variant="outline" @click="openPanel = false" />
+        <UButton :label="isEditing ? 'Guardar' : 'Crear'" color="primary" @click="save" />
+      </template>
+    </USlideover>
 
     <ConfirmDeleteModal
       v-model="openDelete"
@@ -206,7 +174,7 @@ async function doDelete () {
       @confirm="doDelete"
     >
       <p class="text-sm">
-        ¿Seguro que quieres eliminar <b>{{ toDelete?.nombre }}</b>?<br>
+        ¿Seguro que quieres eliminar <b>{{ toDelete?.nombre }}</b>?<br />
         Esta acción no se puede deshacer.
       </p>
     </ConfirmDeleteModal>

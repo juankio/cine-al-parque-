@@ -1,48 +1,67 @@
-<script setup lang="ts">
-type Ingredient = {
-  nombre: string
-  unidad: string
-  stock: number
-  costoUnitario: number
-  // activo se puede seguir usando visualmente, pero no lo mandaremos al backend
-  activo?: boolean
-}
-
-const model = defineModel<Ingredient>({ required: true })
-</script>
-
 <template>
-  <div class="grid gap-4">
-    <UFormField label="Nombre del ingrediente">
-      <UInput v-model="model.nombre" placeholder="Ej. Azúcar" />
-    </UFormField>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <UFormField label="Unidad">
-        <USelect
-          v-model="model.unidad"
-          :options="[
-            { label: 'Unidad', value: 'und' },
-            { label: 'Litro',  value: 'l'   },
-            { label: 'Kilogramo', value: 'kg' },
-            { label: 'Gramo', value: 'g' }
-          ]"
-        />
-      </UFormField>
-
-      <UFormField label="Costo unitario">
-        <UInput v-model.number="model.costoUnitario" type="number" min="0" />
-      </UFormField>
+  <div class="space-y-4">
+    <div>
+      <label class="text-sm font-medium">Nombre</label>
+      <UInput v-model.trim="model.nombre" placeholder="Nombre del ingrediente" />
     </div>
 
-    <UFormField label="Stock">
-      <UInput v-model.number="model.stock" type="number" min="0" />
-    </UFormField>
+    <div>
+      <label class="text-sm font-medium">Unidad</label>
+      <USelect
+        v-model="model.unidad"
+        :options="units"
+        option-attribute="label"
+        value-attribute="value"
+        placeholder="Unidad"
+      />
+    </div>
 
-    <!-- Opcional: sólo UI, no se envía al backend -->
-    <div class="flex items-center gap-3">
-      <USwitch v-model="model.activo" color="primary" />
-      <span class="text-sm">Activo (visual)</span>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-sm font-medium">Stock</label>
+        <UInput v-model.number="model.stock" type="number" min="0" placeholder="0" />
+        <p class="text-xs text-muted mt-1">Se guarda como <code>stockBase</code> (g/ml/unid)</p>
+      </div>
+      <div>
+        <label class="text-sm font-medium">Costo unitario</label>
+        <UInput v-model.number="model.costoUnitario" type="number" min="0" step="0.01" placeholder="0.00" />
+        <p class="text-xs text-muted mt-1">Se guarda como <code>costoPromedio</code></p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <UCheckbox v-model="model.activo" />
+      <span class="text-sm">Activo</span>
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+const props = defineProps<{
+  modelValue: {
+    nombre: string
+    unidad: string
+    stock: number
+    costoUnitario: number
+    activo: boolean
+  }
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue':[any]
+}>()
+
+// proxy seguro para v-model (mantiene 2-way binding)
+const model = computed({
+  get: () => props.modelValue,
+  set: (v) => emit('update:modelValue', v)
+})
+
+const units = [
+  { label: 'Gramo (g)', value: 'g' },
+  { label: 'Kilogramo (kg)', value: 'kg' },
+  { label: 'Mililitro (ml)', value: 'ml' },
+  { label: 'Litro (l)', value: 'l' },
+  { label: 'Unidad (unid)', value: 'unid' }
+]
+</script>
