@@ -21,7 +21,4 @@ const RecipeSchema = new Schema({
     timestamps: true
 })
 
-// Index por si el unique se cae en devs viejos
-RecipeSchema.index({ nombre: 1 }, { unique: true })
-
 export const Recipe = models.Recipe || model('Recipe', RecipeSchema)

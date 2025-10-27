@@ -7,14 +7,8 @@ export default defineEventHandler(async (event) => {
     await requireAdmin(event)
 
     const id = getRouterParam(event, 'id')
-    if (!id) {
-        throw createError({ statusCode: 400, statusMessage: 'Falta id' })
-    }
+    const doc = await MenuItem.findById(id).populate('recipeId', 'nombre').lean()
+    if (!doc) throw createError({ statusCode: 404, statusMessage: 'No encontrado' })
 
-    // Si quieres ver también la receta ligada, usa .populate('recipeId')
-    const doc = await MenuItem.findById(id).lean()
-    if (!doc) {
-        throw createError({ statusCode: 404, statusMessage: 'No encontrado' })
-    }
-    return doc
+    return { item: doc }
 })
