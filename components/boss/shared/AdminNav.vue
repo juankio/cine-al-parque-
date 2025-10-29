@@ -5,7 +5,7 @@ const items = computed(() => ([
   [
     { label: 'Dashboard',    to: '/admin',            icon: 'i-heroicons-home',         active: route.path === '/admin' },
     { label: 'Películas',    to: '/admin/movies',     icon: 'i-heroicons-film',         active: route.path.startsWith('/admin/movies') },
-    { label: 'Menú',         to: '/admin/menu-items', icon: 'i-heroicons-list-bullet',  active: route.path.startsWith('/admin/menu-items') },
+    { label: 'Menú',         to: '/admin/menu', icon: 'i-heroicons-list-bullet',  active: route.path.startsWith('/admin/menu') },
     { label: 'Ingredientes', to: '/admin/ingredients',icon: 'i-heroicons-cube',         active: route.path.startsWith('/admin/ingredients') },
     { label: 'Recetas',      to: '/admin/recipes',    icon: 'i-heroicons-book-open',    active: route.path.startsWith('/admin/recipes') },
     { label: 'KPI',          to: '/admin/kpi',        icon: 'i-heroicons-chart-bar',    active: route.path.startsWith('/admin/kpi') }
