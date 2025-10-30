@@ -3,20 +3,31 @@ import { requireAdmin } from '@/server/utils/admin'
 import { MenuItem } from '@/server/models/MenuItem'
 
 export default defineEventHandler(async (event) => {
-    await connectDB()
-    await requireAdmin(event)
+    await connectDB(); await requireAdmin(event)
+    const b = await readBody(event)
 
-    const b = await readBody<{ nombre: string; precio: number; recipeId?: string; activo?: boolean }>(event)
+    // Sanitizar
+    const nombre = String(b?.nombre || '').trim()
+    const precio = Number(b?.precio ?? NaN)
+    const recipeId = b?.recipeId ? String(b.recipeId) : null
+    const porciones = Math.max(1, Number(b?.porciones || 1))
+    const activo = !!b?.activo
+    const descripcion = String(b?.descripcion || '').trim()
+    const categoria = String(b?.categoria || '').trim()
+    const tags = Array.isArray(b?.tags) ? b.tags.map((t: string) => String(t).trim()).filter(Boolean) : []
 
-    if (!b?.nombre || typeof b.precio !== 'number')
-        throw createError({ statusCode: 400, statusMessage: 'nombre y precio requeridos' })
+    const extras = Array.isArray(b?.extras)
+        ? b.extras
+            .map((x: any) => ({ ingredientId: x.ingredientId, qtyExtra: Number(x.qtyExtra) }))
+            .filter((x: any) => x.ingredientId && Number.isFinite(x.qtyExtra) && x.qtyExtra >= 0)
+        : []
+
+    if (!nombre) throw createError({ statusCode: 400, statusMessage: 'nombre requerido' })
+    if (!Number.isFinite(precio) || precio < 0) throw createError({ statusCode: 400, statusMessage: 'precio inválido' })
 
     const doc = await MenuItem.create({
-        nombre: b.nombre.trim(),
-        precio: Number(b.precio),
-        recipeId: b.recipeId || null,
-        activo: b.activo ?? true
+        nombre, precio, recipeId, porciones, activo, descripcion, categoria, tags, extras
     })
 
-    return { ok: true, menuItem: { id: String(doc._id) } }
+    return { ok: true, item: { id: String(doc._id) } }
 })

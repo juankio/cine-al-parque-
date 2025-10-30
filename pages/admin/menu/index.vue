@@ -1,209 +1,174 @@
-<script setup lang="ts">
-definePageMeta({ layout: 'admin', middleware: ['admin'] })
-
-import { ref, computed, onMounted, nextTick } from 'vue'
-import AdminHeader from '~/components/boss/shared/AdminHeader.vue'
-import ConfirmDeleteModal from '~/components/shared/ConfirmDeleteModal.vue'
+<script setup>
 import AdminMenuForm from '~/components/boss/menu/AdminMenuForm.vue'
 import { useMenuAdmin } from '~/composables/admin/useMenuAdmin'
 
-// composable
+definePageMeta({ layout: 'admin' })
+
 const {
-  items, filtered, loading, error, search,
-  recipes, recipesLoading,
-  fetchMenu, fetchRecipes, createItem, updateItem, deleteItem
+  items, loading, error, search, filtered,
+  recipes, recipesLoading, fetchMenu, fetchRecipes,
+  createItem, updateItem, deleteItem
 } = useMenuAdmin()
 
-// ---------- Estado UI ----------
-const openPanel = ref(false)
-const isEditing = ref(false)
-const currentId = ref<string | null>(null)
-const openDelete = ref(false)
-const toDelete = ref<any>(null)
-
-// ---------- Form ----------
-const form = ref({
-  nombre: '',
-  precio: '',
-  recipeId: null as string | null,
-  activo: true
+onMounted(() => {
+  fetchMenu()
+  fetchRecipes()
 })
 
-const EMPTY_MENU = Object.freeze({ nombre: '', precio: '', recipeId: null, activo: true })
-const formSafe = computed(() => form.value ?? EMPTY_MENU)
+const open = ref(false)
+const saving = ref(false)
+const isEditing = ref(false)
+const editingId = ref(null)
 
-// ---------- Funciones ----------
-function resetForm() {
-  form.value = { nombre: '', precio: '', recipeId: null, activo: true }
+function newForm () {
+  return {
+    nombre: '',
+    precio: '',
+    recipeId: null,
+    porciones: 1,
+    descripcion: '',
+    categoria: '',
+    tags: [],
+    activo: true
+  }
 }
+const form = reactive(newForm())
 
-onMounted(() => Promise.all([fetchMenu(), fetchRecipes()]))
-
-function startCreate() {
-  resetForm()
-  currentId.value = null
+function startCreate () {
   isEditing.value = false
-  openPanel.value = true
+  editingId.value = null
+  Object.assign(form, newForm())
+  open.value = true
 }
 
-function startEdit(item: any) {
-  form.value = {
-    nombre: item.nombre || '',
-    precio: String(item.precio ?? ''),
-    recipeId: item.recipeId?._id || item.recipeId || null,
-    activo: !!item.activo
-  }
-  currentId.value = item._id
+function startEdit (row) {
   isEditing.value = true
-  openPanel.value = true
+  editingId.value = row._id || null
+  Object.assign(form, {
+    nombre: row?.nombre ?? '',
+    precio: row?.precio ?? '',
+    recipeId: row?.recipeId ?? null,
+    porciones: row?.porciones ?? 1,
+    descripcion: row?.descripcion ?? '',
+    categoria: row?.categoria ?? '',
+    tags: Array.isArray(row?.tags) ? [...row.tags] : [],
+    activo: row?.activo ?? true
+  })
+  open.value = true
 }
 
-async function save() {
-  await nextTick()
-  const data = {
-    nombre: String(form.value.nombre ?? '').trim(),
-    precio: Number(String(form.value.precio).replace(',', '.')),
-    recipeId: form.value.recipeId || null,
-    activo: !!form.value.activo
+async function onSubmit () {
+  if (!form.nombre?.trim()) return alert('El nombre es obligatorio')
+
+  const payload = {
+    ...form,
+    precio: Number(form.precio) || 0,
+    porciones: Number(form.porciones) || 1
   }
 
-  if (!data.nombre) return alert('El nombre es obligatorio')
-  if (!Number.isFinite(data.precio) || data.precio < 0) return alert('El precio debe ser un número válido')
-
+  saving.value = true
   try {
-    if (isEditing.value && currentId.value) await updateItem(currentId.value, data)
-    else await createItem(data)
-    openPanel.value = false
-  } catch (err: any) {
-    console.error('[MENÚ] Error guardando', err)
-    alert(err?.data?.message ?? err?.message ?? 'Error guardando')
+    if (isEditing.value && editingId.value) {
+      await updateItem(editingId.value, payload)
+    } else {
+      await createItem(payload)
+    }
+    open.value = false
+  } catch (e) {
+    console.error(e)
+    alert('No se pudo guardar')
+  } finally {
+    saving.value = false
   }
 }
 
-function askDelete(item: any) {
-  toDelete.value = item
-  openDelete.value = true
-}
-
-async function doDelete() {
-  if (!toDelete.value) return
-  try {
-    await deleteItem(toDelete.value._id)
-    openDelete.value = false
-  } catch (err) {
-    console.error('[MENÚ] Error eliminando', err)
-  }
+function onDelete (id) {
+  if (!confirm('¿Borrar este producto?')) return
+  deleteItem(id)
 }
 </script>
 
 <template>
   <UContainer class="py-8 space-y-6">
-    <AdminHeader title="Menú" subtitle="Define los productos disponibles para venta.">
-      <template #actions>
-        <div class="flex items-center gap-2">
-          <UInput
-            v-model.trim="search"
-            type="search"
-            placeholder="Buscar producto…"
-            icon="i-heroicons-magnifying-glass-20-solid"
-            class="w-64"
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">Menú</h1>
+        <p class="text-sm text-gray-500">Productos del menú con receta opcional y estado.</p>
+      </div>
+      <div class="flex gap-2">
+        <UInput
+          v-model.trim="search"
+          placeholder="Buscar producto…"
+          icon="i-heroicons-magnifying-glass-20-solid"
+        />
+        <UButton color="primary" @click="startCreate">Nuevo</UButton>
+      </div>
+    </div>
+
+    <!-- grid de productos -->
+    <div v-if="!loading && filtered.length" class="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+      <UCard v-for="it in filtered" :key="it._id" class="group">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="font-medium">{{ it.nombre }}</div>
+            <div class="text-xs text-gray-500">{{ it.categoria || 'Sin categoría' }}</div>
+          </div>
+          <UBadge :color="it.activo ? 'green' : 'gray'">{{ it.activo ? 'Activo' : 'Inactivo' }}</UBadge>
+        </div>
+
+        <div class="mt-3 text-lg font-semibold">
+          ${{ Number(it.precio || 0).toLocaleString('es-CO') }}
+        </div>
+
+        <div class="mt-2 flex flex-wrap gap-1">
+          <UBadge v-for="t in (it.tags || [])" :key="t" variant="soft">#{{ t }}</UBadge>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton size="xs" variant="ghost" @click="startEdit(it)">Editar</UButton>
+            <UButton size="xs" color="red" variant="soft" @click="onDelete(it._id)">Borrar</UButton>
+          </div>
+        </template>
+      </UCard>
+    </div>
+
+    <p v-else-if="!loading" class="text-sm text-gray-500">Sin productos.</p>
+
+    <!-- Slideover accesible (props title/description + slots body/footer) -->
+    <USlideover
+      v-model:open="open"
+      :title="isEditing ? 'Editar producto' : 'Nuevo producto'"
+      description="Completa los campos para crear el producto."
+    >
+      <!-- BODY -->
+      <template #body>
+        <div class="p-4">
+          <!-- OJO: el picker de recetas está DENTRO del AdminMenuForm para no duplicarlo -->
+          <AdminMenuForm
+            :model-value="form"
+            :recipe-options="recipes"
+            :recipe-loading="recipesLoading"
+            :category-options="[]"
+            @update:modelValue="v => Object.assign(form, v)"
           />
-          <UButton v-if="search" variant="ghost" color="gray" @click="search = ''">Limpiar</UButton>
-          <UButton color="primary" @click="startCreate">Nuevo</UButton>
         </div>
       </template>
-    </AdminHeader>
 
-    <!-- Estado de carga -->
-    <div v-if="loading" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <UCard v-for="i in 6" :key="i" class="p-4">
-        <USkeleton class="h-5 w-2/3 mb-2" />
-        <USkeleton class="h-4 w-1/3" />
-      </UCard>
-    </div>
-
-    <!-- Error -->
-    <UAlert
-      v-else-if="error"
-      color="gray"
-      variant="soft"
-      icon="i-heroicons-exclamation-triangle"
-      :description="error"
-      title="No se pudo cargar el menú"
-    />
-
-    <!-- Grid de productos -->
-    <div v-else class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <UCard v-for="p in filtered" :key="p._id" class="p-4 flex flex-col gap-3">
-        <div class="flex items-center justify-between">
-          <h3 class="font-semibold truncate">{{ p.nombre }}</h3>
-          <span
-            class="text-xs rounded-md px-2 py-0.5"
-            :class="p.activo ? 'bg-green-500/15 text-green-500' : 'bg-neutral-500/15 text-neutral-400'"
-          >
-            {{ p.activo ? 'Activo' : 'Inactivo' }}
-          </span>
+      <!-- FOOTER -->
+      <template #footer>
+        <div class="flex items-center justify-between w-full">
+          <div class="text-xs text-gray-500">
+            {{ isEditing ? 'Editando' : 'Creando' }}: <b>{{ form.nombre || '—' }}</b>
+          </div>
+          <div class="flex gap-2">
+            <UButton variant="ghost" @click="open = false">Cancelar</UButton>
+            <UButton color="primary" :loading="saving" @click="onSubmit">
+              {{ isEditing ? 'Guardar cambios' : 'Crear' }}
+            </UButton>
+          </div>
         </div>
-
-        <p class="text-sm text-muted">
-          Precio: <b>${{ p.precio?.toLocaleString?.() ?? p.precio }}</b>
-        </p>
-
-        <p class="text-xs text-muted">
-          Receta: <b>{{ p.recipeId?.nombre || p.recipeId?._id || '—' }}</b>
-        </p>
-
-        <div class="flex flex-wrap gap-2 mt-1">
-          <UButton size="xs" variant="outline" color="primary" @click="startEdit(p)">
-            Editar
-          </UButton>
-          <UButton
-            size="xs"
-            variant="ghost"
-            color="gray"
-            @click="askDelete(p)"
-            icon="i-heroicons-trash"
-          >
-            Eliminar
-          </UButton>
-        </div>
-      </UCard>
-
-      <div v-if="filtered.length === 0" class="text-muted">Sin resultados.</div>
-    </div>
-
-    <!-- Slideover -->
-   <USlideover
-  v-model:open="openPanel"
-  :title="isEditing ? 'Editar producto' : 'Nuevo producto'"
-  :description="isEditing ? 'Modifica los datos y guarda el producto.' : 'Completa los campos y crea el producto.'"
-  side="right"
-  :ui="{ footer: 'justify-end' }"
-  class="max-w-md"
->
-  <template #body>
-    <div class="p-4">
-      <AdminMenuForm
-        v-model="form"                   
-        :recipe-options="[...recipes]"
-        :loading-recipes="recipesLoading"
-      />
-    </div>
-  </template>
-
-  <template #footer>
-    <UButton label="Cerrar" color="neutral" variant="outline" @click="openPanel = false" />
-    <UButton :label="isEditing ? 'Guardar' : 'Crear'" color="primary" @click="save" />
-  </template>
-</USlideover>
-
-
-    <!-- Confirmar eliminar -->
-    <ConfirmDeleteModal v-model="openDelete" title="Eliminar producto" @confirm="doDelete">
-      <p class="text-sm">
-        ¿Seguro que quieres eliminar <b>{{ toDelete?.nombre }}</b>?<br />
-        Esta acción no se puede deshacer.
-      </p>
-    </ConfirmDeleteModal>
+      </template>
+    </USlideover>
   </UContainer>
 </template>
