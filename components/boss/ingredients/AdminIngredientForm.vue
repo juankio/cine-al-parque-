@@ -1,17 +1,21 @@
+import { computed } from "vue";
+
 <!-- components/boss/ingredients/AdminIngredientForm.vue -->
 <template>
   <div class="space-y-5">
     <!-- Nombre -->
     <div>
       <label class="text-sm font-medium mb-2 block">Nombre</label>
+
       <UInput
         v-model.trim="model.nombre"
-        placeholder="Nombre del ingrediente"
-        class="mt-1"
+        placeholder="Ej: Harina de trigo"
+        icon="i-heroicons-cube-transparent"
+        autofocus
       />
     </div>
 
-    <!-- Unidad (grid de tarjetas) -->
+    <!-- Unidad (grid de tarjetas con íconos corregidos y balanceados) -->
     <div>
       <label class="text-sm font-medium mb-2 block">Unidad</label>
 
@@ -34,7 +38,10 @@
               : 'border-default hover:bg-muted/30'
           "
         >
-          <div class="font-medium">{{ u.label }}</div>
+          <div class="flex items-center gap-2 font-medium">
+            <UIcon :name="u.icon" class="text-primary text-2xl" />
+            {{ u.label }}
+          </div>
           <div class="text-xs text-muted">{{ u.hint }}</div>
         </button>
       </div>
@@ -49,7 +56,14 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div>
         <label class="text-sm font-medium">Stock</label>
-        <UInput v-model.number="model.stock" type="number" min="0" placeholder="0" />
+
+        <UInput
+          v-model.number="model.stock"
+          type="number"
+          min="0"
+          placeholder="0"
+          icon="i-heroicons-archive-box"
+        />
         <p class="text-xs text-muted mt-1">
           Se guarda como <code>stockBase</code> (g/ml/unid)
         </p>
@@ -57,12 +71,14 @@
 
       <div>
         <label class="text-sm font-medium">Costo unitario</label>
+
         <UInput
           v-model.number="model.costoUnitario"
           type="number"
           min="0"
           step="0.01"
           placeholder="0.00"
+          icon="i-heroicons-banknotes"
         />
         <p class="text-xs text-muted mt-1">Se guarda como <code>costoPromedio</code></p>
       </div>
@@ -97,11 +113,31 @@ const model = computed({
 
 // tarjetas disponibles
 const units = [
-  { label: "Gramo", value: "g", hint: "Base: g · Peso" },
-  { label: "Kilogramo", value: "kg", hint: "Base: g · Peso (×1000)" },
-  { label: "Mililitro", value: "ml", hint: "Base: ml · Volumen" },
-  { label: "Litro", value: "l", hint: "Base: ml · Volumen (×1000)" },
-  { label: "Unidad", value: "unid", hint: "Base: unid · Unidad" },
+  { label: "Gramo", value: "g", hint: "Base: g · Peso", icon: "i-heroicons-scale" },
+  {
+    label: "Kilo",
+    value: "kg",
+    hint: "Base: g · Peso (×1000)",
+    icon: "i-heroicons-cube",
+  },
+  {
+    label: "mL",
+    value: "ml",
+    hint: "Base: ml · Volumen",
+    icon: "i-heroicons-beaker",
+  },
+  {
+    label: "Litro",
+    value: "l",
+    hint: "Base: ml · Volumen (×1000)",
+    icon: "i-heroicons-beaker-solid",
+  },
+  {
+    label: "Unidad",
+    value: "unid",
+    hint: "Base: unid · Unidad",
+    icon: "i-heroicons-archive-box",
+  },
 ];
 
 // normaliza si llega algo raro
