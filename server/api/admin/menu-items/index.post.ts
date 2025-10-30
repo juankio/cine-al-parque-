@@ -1,33 +1,27 @@
-import { connectDB } from '@/server/utils/mongoose'
-import { requireAdmin } from '@/server/utils/admin'
-import { MenuItem } from '@/server/models/MenuItem'
+import { connectDB } from '~/server/utils/mongoose'
+import { MenuItem } from '~/server/models/MenuItem'
 
 export default defineEventHandler(async (event) => {
-    await connectDB(); await requireAdmin(event)
-    const b = await readBody(event)
+    await connectDB() // <- garantiza conexión
 
-    // Sanitizar
-    const nombre = String(b?.nombre || '').trim()
-    const precio = Number(b?.precio ?? NaN)
-    const recipeId = b?.recipeId ? String(b.recipeId) : null
-    const porciones = Math.max(1, Number(b?.porciones || 1))
-    const activo = !!b?.activo
-    const descripcion = String(b?.descripcion || '').trim()
-    const categoria = String(b?.categoria || '').trim()
-    const tags = Array.isArray(b?.tags) ? b.tags.map((t: string) => String(t).trim()).filter(Boolean) : []
+    const body = await readBody<any>(event)
 
-    const extras = Array.isArray(b?.extras)
-        ? b.extras
-            .map((x: any) => ({ ingredientId: x.ingredientId, qtyExtra: Number(x.qtyExtra) }))
-            .filter((x: any) => x.ingredientId && Number.isFinite(x.qtyExtra) && x.qtyExtra >= 0)
-        : []
-
-    if (!nombre) throw createError({ statusCode: 400, statusMessage: 'nombre requerido' })
-    if (!Number.isFinite(precio) || precio < 0) throw createError({ statusCode: 400, statusMessage: 'precio inválido' })
+    const recipeIds = Array.isArray(body.recipeIds)
+        ? body.recipeIds.map(String).filter(Boolean)
+        : (body.recipeId ? [String(body.recipeId)] : [])
 
     const doc = await MenuItem.create({
-        nombre, precio, recipeId, porciones, activo, descripcion, categoria, tags, extras
+        nombre: String(body.nombre ?? '').trim(),
+        precio: Number(body.precio) || 0,
+        porciones: Math.max(1, Number(body.porciones) || 1),
+        descripcion: String(body.descripcion ?? ''),
+        categoria: String(body.categoria ?? ''),
+        activo: Boolean(body.activo),
+        tags: Array.isArray(body.tags) ? body.tags.map(String) : [],
+        recipeIds,
+        recipeId: recipeIds[0] ?? null,
+        extras: Array.isArray(body.extras) ? body.extras : []
     })
 
-    return { ok: true, item: { id: String(doc._id) } }
+    return doc
 })

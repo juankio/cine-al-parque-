@@ -1,42 +1,57 @@
-import { connectDB } from '@/server/utils/mongoose'
-import { requireAdmin } from '@/server/utils/admin'
-import { MenuItem } from '@/server/models/MenuItem'
+// /server/api/admin/menu-items/[id].patch.ts
+import { MenuItem } from '~/server/models/MenuItem'
+import { Types } from 'mongoose'
 
 export default defineEventHandler(async (event) => {
-    await connectDB(); await requireAdmin(event)
     const id = getRouterParam(event, 'id')
-    const b = await readBody(event)
+    const body = await readBody<any>(event)
+    const patch: any = {}
 
-    const update: any = {}
+    if (body.nombre !== undefined)
+        patch.nombre = String(body.nombre).trim()
+    if (body.precio !== undefined)
+        patch.precio = Number(body.precio) || 0
+    if (body.porciones !== undefined)
+        patch.porciones = Math.max(1, Number(body.porciones) || 1)
+    if (body.descripcion !== undefined)
+        patch.descripcion = String(body.descripcion ?? '')
+    if (body.categoria !== undefined)
+        patch.categoria = String(body.categoria ?? '')
+    if (body.activo !== undefined)
+        patch.activo = Boolean(body.activo)
 
-    if ('nombre' in b) {
-        const v = String(b.nombre || '').trim()
-        if (!v) throw createError({ statusCode: 400, statusMessage: 'nombre requerido' })
-        update.nombre = v
-    }
-    if ('precio' in b) {
-        const p = Number(b.precio)
-        if (!Number.isFinite(p) || p < 0) throw createError({ statusCode: 400, statusMessage: 'precio inválido' })
-        update.precio = p
-    }
-    if ('recipeId' in b) update.recipeId = b.recipeId ? String(b.recipeId) : null
-    if ('porciones' in b) {
-        const por = Math.max(1, Number(b.porciones || 1))
-        update.porciones = por
-    }
-    if ('activo' in b) update.activo = !!b.activo
-    if ('descripcion' in b) update.descripcion = String(b.descripcion || '').trim()
-    if ('categoria' in b) update.categoria = String(b.categoria || '').trim()
-    if ('tags' in b && Array.isArray(b.tags)) {
-        update.tags = b.tags.map((t: string) => String(t).trim()).filter(Boolean)
-    }
-    if ('extras' in b && Array.isArray(b.extras)) {
-        update.extras = b.extras
-            .map((x: any) => ({ ingredientId: x.ingredientId, qtyExtra: Number(x.qtyExtra) }))
-            .filter((x: any) => x.ingredientId && Number.isFinite(x.qtyExtra) && x.qtyExtra >= 0)
+    // Tags
+    if (body.tags !== undefined) {
+        patch.tags = Array.isArray(body.tags)
+            ? body.tags.map((t: any) => String(t)).filter(Boolean)
+            : []
     }
 
-    const doc = await MenuItem.findByIdAndUpdate(id, update, { new: true })
-    if (!doc) throw createError({ statusCode: 404, statusMessage: 'No encontrado' })
-    return { ok: true }
+    // Recetas (multi)
+    let recipeIds: string[] = []
+    if (Array.isArray(body.recipeIds)) {
+        recipeIds = body.recipeIds
+    } else if (body.recipeId) {
+        recipeIds = [String(body.recipeId)]
+    }
+
+    if (recipeIds.length) {
+        patch.recipeIds = recipeIds
+        patch.recipeId = recipeIds[0]
+    } else if (body.recipeIds !== undefined || body.recipeId !== undefined) {
+        patch.recipeIds = []
+        patch.recipeId = null
+    }
+
+    // Extras (por si los usas en el futuro)
+    if (body.extras !== undefined) {
+        patch.extras = Array.isArray(body.extras) ? body.extras : []
+    }
+
+    const updated = await MenuItem.findByIdAndUpdate(
+        new Types.ObjectId(id),
+        patch,
+        { new: true }
+    )
+    return updated
 })
