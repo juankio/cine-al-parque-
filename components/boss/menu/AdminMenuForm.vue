@@ -1,4 +1,3 @@
-<!-- components/boss/menu/AdminMenuForm.vue -->
 <script setup lang="ts">
 type Opt = { value: string; label: string }
 
@@ -21,27 +20,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{ 'update:modelValue': [any] }>()
 
-/** Helper para crear v-model por campo sin clonar el objeto (evita loops). */
-function field<T = any>(key: string, fallback: T) {
-  return computed<T>({
-    get: () => ((props.modelValue as any)?.[key] ?? fallback) as T,
-    set: (v: T) => {
-      emit('update:modelValue', { ...props.modelValue, [key]: v })
-    }
-  })
-}
+// proxy directo (como AdminIngredientForm)
+const model = computed({
+  get: () => props.modelValue,
+  set: (v) => emit('update:modelValue', v)
+})
 
-const nombre     = field<string>('nombre', '')
-const precio     = field<number | string>('precio', '')
-const porciones  = field<number | string>('porciones', 1)
-const descripcion= field<string>('descripcion', '')
-const categoria  = field<string>('categoria', '')
-const tipo       = field<string>('tipo', '')
-const tags       = field<string[]>('tags', [])
-const activo     = field<boolean>('activo', true)
-const recipeIds  = field<string[]>('recipeIds', [])
-
-/* ====== RECETAS (multi) ====== */
+/* ===== RECETAS ===== */
 const recipeSearch = ref('')
 const filteredRecipes = computed(() => {
   const q = recipeSearch.value.toLowerCase().trim()
@@ -49,71 +34,86 @@ const filteredRecipes = computed(() => {
   if (!q) return list
   return list.filter(r => String(r.label).toLowerCase().includes(q))
 })
-
 function isSelected(id: string) {
-  return (recipeIds.value || []).includes(String(id))
+  return (model.value.recipeIds || []).map(String).includes(String(id))
 }
 function toggleRecipe(id: string) {
-  const curr = new Set((recipeIds.value || []).map(String))
+  const arr = [...(model.value.recipeIds || [])].map(String)
   const sid = String(id)
-  curr.has(sid) ? curr.delete(sid) : curr.add(sid)
-  recipeIds.value = Array.from(curr)
+  const idx = arr.indexOf(sid)
+  if (idx >= 0) arr.splice(idx, 1)
+  else arr.push(sid)
+  model.value.recipeIds = arr
 }
-function clearRecipes() { recipeIds.value = [] }
+function clearRecipes() { model.value.recipeIds = [] }
 
-/* ====== TIPO ====== */
+/* ===== TIPO ===== */
 const tipoOptions = [
   { value: 'personal', label: 'Personal', hint: '1 porción' },
-  { value: 'grupal',  label: 'Grupal',  hint: '2–3 porciones' },
-  { value: 'parche',  label: 'Parche',  hint: '4+ porciones' },
+  { value: 'grupal', label: 'Grupal', hint: '2–3 porciones' },
+  { value: 'parche', label: 'Parche', hint: '4+ porciones' }
 ]
 function pickTipo(val: string) {
-  tipo.value = (tipo.value === val) ? '' : val
-  const n = Number(porciones.value) || 1
-  if (tipo.value === 'personal') porciones.value = 1
-  else if (tipo.value === 'grupal') porciones.value = Math.max(2, n)
-  else if (tipo.value === 'parche') porciones.value = Math.max(4, n)
+  const currentTipo = model.value.tipo || ''
+  const newTipo = currentTipo === val ? '' : val
+  let newPorciones = Number(model.value.porciones) || 1
+  if (newTipo === 'personal') newPorciones = 1
+  else if (newTipo === 'grupal') newPorciones = Math.max(2, newPorciones)
+  else if (newTipo === 'parche') newPorciones = Math.max(4, newPorciones)
+  model.value.tipo = newTipo
+  model.value.porciones = newPorciones
 }
 
-/* ====== CATEGORÍAS ====== */
+/* ===== CATEGORÍAS ===== */
 const categoryChips = computed<Opt[]>(() =>
-  (props.categoryOptions?.length ? props.categoryOptions : [
-    { value: 'Combo',  label: 'Combo' },
-    { value: 'Pizza',  label: 'Pizza' },
-    { value: 'Bebida', label: 'Bebida' },
-    { value: 'Snack',  label: 'Snack' },
-    { value: 'Postre', label: 'Postre' }
-  ])
+  (props.categoryOptions?.length
+    ? props.categoryOptions
+    : [
+        { value: 'Combo', label: 'Combo' },
+        { value: 'Pizza', label: 'Pizza' },
+        { value: 'Bebida', label: 'Bebida' },
+        { value: 'Snack', label: 'Snack' },
+        { value: 'Postre', label: 'Postre' }
+      ])
 )
 function pickCategoria(val: string) {
-  categoria.value = (categoria.value === val) ? '' : val
+  const current = model.value.categoria || ''
+  model.value.categoria = current === val ? '' : val
 }
 
-/* ====== TAGS ====== */
-const suggestedTags = ['combo', 'vegano', 'nuevo', 'popular', 'sin-gluten', 'familiar', 'picante', 'light']
+/* ===== TAGS ===== */
+const suggestedTags = [
+  'combo', 'vegano', 'nuevo', 'popular',
+  'sin-gluten', 'familiar', 'picante', 'light'
+]
 function toggleTag(tag: string) {
-  const set = new Set(tags.value || [])
-  set.has(tag) ? set.delete(tag) : set.add(tag)
-  tags.value = Array.from(set)
+  const list = [...(model.value.tags || [])]
+  const i = list.indexOf(tag)
+  if (i >= 0) list.splice(i, 1)
+  else list.push(tag)
+  model.value.tags = list
 }
+
+/* ===== ACTIVO ===== */
+function flipActivo(v: boolean) { model.value.activo = v }
 </script>
 
 <template>
   <div class="space-y-8">
-    <!-- NOMBRE -->
+    <!-- Nombre -->
     <div>
       <label class="text-sm font-medium mb-2 block">Nombre</label>
       <UInput
-        v-model.trim="nombre"
+        v-model.trim="model.nombre"
         placeholder="Ej: Combo Parche Pepperoni"
         icon="i-heroicons-cube-transparent"
         autofocus
       />
     </div>
 
-    <!-- RECETAS -->
+    <!-- Recetas -->
     <div>
-      <label class="text-sm font-medium mb-2 block">Asociar recetas (opcional)</label>
+      <label class="text-sm font-medium mb-2 block">Recetas asociadas (opcional)</label>
       <div class="flex items-center gap-2 mb-3">
         <UInput
           v-model="recipeSearch"
@@ -124,16 +124,14 @@ function toggleTag(tag: string) {
         <UButton
           size="xs"
           variant="ghost"
-          :disabled="!recipeIds.length"
+          :disabled="!(model.recipeIds && model.recipeIds.length)"
           @click="clearRecipes"
-        >Quitar selección</UButton>
+        >
+          Quitar selección
+        </UButton>
       </div>
 
-      <div
-        role="group"
-        aria-label="Recetas"
-        class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-56 overflow-auto pr-1"
-      >
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-56 overflow-auto pr-1">
         <template v-if="recipeLoading">
           <USkeleton v-for="i in 6" :key="i" class="h-20 rounded-xl" />
         </template>
@@ -144,26 +142,30 @@ function toggleTag(tag: string) {
           type="button"
           :aria-pressed="isSelected(r.value)"
           @click="toggleRecipe(r.value)"
-          class="px-3 py-2 text-left transition focus:outline-none focus-visible:ring rounded-xl relative bg-transparent hover:bg-muted/40"
-          :class="isSelected(r.value) ? 'ring-1 ring-primary/40 bg-primary/10' : ''"
+          class="px-3 py-2 text-left border rounded-xl transition relative focus-visible:ring"
+          :class="isSelected(r.value)
+            ? 'border-emerald-600 bg-emerald-50'
+            : 'border-gray-300 hover:bg-gray-50'"
         >
-          <div class="font-medium truncate">{{ r.label }}</div>
+          <div class="font-medium truncate flex items-center gap-2">
+            <span>{{ r.label }}</span>
+            <UIcon
+              v-if="isSelected(r.value)"
+              name="i-heroicons-check-circle"
+              class="text-emerald-600 text-lg"
+            />
+          </div>
           <div class="text-xs text-muted">ID: {{ String(r.value).slice(-6) }}</div>
-          <UIcon
-            v-if="isSelected(r.value)"
-            name="i-heroicons-check-circle"
-            class="absolute right-2 top-2 text-primary text-lg"
-          />
         </button>
       </div>
 
       <p class="text-xs text-muted mt-2">
-        Puedes seleccionar <b>varias</b> recetas (ideal para combos).
-        Selección: {{ recipeIds.length }}
+        Puedes seleccionar <b>varias</b> recetas (ideal para combos grandes).
+        Seleccionadas: {{ model.recipeIds?.length || 0 }}
       </p>
     </div>
 
-    <!-- TIPO -->
+    <!-- Tipo -->
     <div>
       <label class="text-sm font-medium mb-2 block">Tipo</label>
       <div class="flex flex-wrap gap-2">
@@ -171,20 +173,21 @@ function toggleTag(tag: string) {
           v-for="t in tipoOptions"
           :key="t.value"
           size="xs"
-          :variant="tipo === t.value ? 'solid' : 'soft'"
-          :color="tipo === t.value ? 'primary' : 'gray'"
+          :variant="model.tipo === t.value ? 'solid' : 'soft'"
+          :color="model.tipo === t.value ? 'primary' : 'gray'"
           class="rounded-full"
           @click="pickTipo(t.value)"
         >
-          {{ t.label }} <span class="opacity-70 ml-1 text-xs">({{ t.hint }})</span>
+          {{ t.label }}
+          <span class="opacity-70 ml-1 text-xs">({{ t.hint }})</span>
         </UButton>
       </div>
     </div>
 
-    <!-- PRECIO / PORCIONES -->
+    <!-- Precio / Porciones -->
     <div class="grid sm:grid-cols-2 gap-4">
       <UInput
-        v-model.number="precio"
+        v-model.number="model.precio"
         type="number"
         min="0"
         label="Precio"
@@ -192,7 +195,7 @@ function toggleTag(tag: string) {
         icon="i-heroicons-currency-dollar"
       />
       <UInput
-        v-model.number="porciones"
+        v-model.number="model.porciones"
         type="number"
         min="1"
         label="Porciones"
@@ -200,7 +203,7 @@ function toggleTag(tag: string) {
       />
     </div>
 
-    <!-- CATEGORÍA -->
+    <!-- Categoría -->
     <div>
       <label class="text-sm font-medium mb-2 block">Categoría</label>
       <div class="flex flex-wrap gap-2">
@@ -208,8 +211,8 @@ function toggleTag(tag: string) {
           v-for="c in categoryChips"
           :key="c.value"
           size="xs"
-          :variant="categoria === c.value ? 'solid' : 'soft'"
-          :color="categoria === c.value ? 'primary' : 'gray'"
+          :variant="model.categoria === c.value ? 'solid' : 'soft'"
+          :color="model.categoria === c.value ? 'primary' : 'gray'"
           class="rounded-full"
           @click="pickCategoria(c.value)"
         >
@@ -218,28 +221,28 @@ function toggleTag(tag: string) {
       </div>
     </div>
 
-    <!-- DESCRIPCIÓN -->
+    <!-- Descripción -->
     <UTextarea
-      v-model="descripcion"
+      v-model="model.descripcion"
       label="Descripción"
       placeholder="Breve descripción del producto"
       icon="i-heroicons-pencil-square"
       autoresize
     />
 
-    <!-- TAGS -->
+    <!-- Tags -->
     <div>
       <div class="flex items-center justify-between mb-2">
         <label class="text-sm font-medium">Etiquetas</label>
-        <span class="text-xs text-muted">{{ (tags || []).length }} / 8</span>
+        <span class="text-xs text-muted">{{ (model.tags || []).length }} / 8</span>
       </div>
       <div class="flex flex-wrap gap-2">
         <UButton
           v-for="t in suggestedTags"
           :key="t"
           size="xs"
-          :variant="(tags || []).includes(t) ? 'solid' : 'soft'"
-          :color="(tags || []).includes(t) ? 'primary' : 'gray'"
+          :variant="(model.tags || []).includes(t) ? 'solid' : 'soft'"
+          :color="(model.tags || []).includes(t) ? 'primary' : 'gray'"
           class="rounded-full"
           @click="toggleTag(t)"
         >
@@ -248,13 +251,13 @@ function toggleTag(tag: string) {
       </div>
     </div>
 
-    <!-- ACTIVO -->
+    <!-- Activo -->
     <div class="flex items-center justify-between">
       <div>
         <h4 class="text-sm font-medium">Activo</h4>
         <p class="text-xs text-muted">Aparece en el menú público</p>
       </div>
-      <USwitch v-model="activo" />
+      <USwitch :model-value="model.activo ?? true" @update:model-value="flipActivo" />
     </div>
   </div>
 </template>

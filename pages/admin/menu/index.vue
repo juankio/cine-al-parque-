@@ -1,4 +1,3 @@
-<!-- pages/admin/menu/index.vue -->
 <script setup lang="ts">
 import AdminMenuForm from '~/components/boss/menu/AdminMenuForm.vue'
 import { useMenuAdmin } from '~/composables/admin/useMenuAdmin'
@@ -6,9 +5,18 @@ import { useMenuAdmin } from '~/composables/admin/useMenuAdmin'
 definePageMeta({ layout: 'admin' })
 
 const {
-  items, loading, error, search, filtered,
-  recipes, recipesLoading, fetchMenu, fetchRecipes,
-  createItem, updateItem, deleteItem
+  items,
+  loading,
+  error,
+  search,
+  filtered,
+  recipes,
+  recipesLoading,
+  fetchMenu,
+  fetchRecipes,
+  createItem,
+  updateItem,
+  deleteItem
 } = useMenuAdmin()
 
 onMounted(() => {
@@ -16,14 +24,14 @@ onMounted(() => {
   fetchRecipes()
 })
 
-/* ---------- UI state ---------- */
+/* ---------- UI ---------- */
 const open = ref(false)
 const saving = ref(false)
 const isEditing = ref(false)
-const editingId = ref<string|null>(null)
+const editingId = ref<string | null>(null)
 
-/* ---------- Form state (MISMA referencia siempre) ---------- */
-const defaults = () => ({
+/* ---------- Form ---------- */
+const form = reactive({
   nombre: '',
   precio: '',
   porciones: 1,
@@ -34,11 +42,15 @@ const defaults = () => ({
   activo: true,
   recipeIds: [] as string[]
 })
-const form = reactive(defaults())
 
-function resetForm() { Object.assign(form, defaults()) }
-
+/** Llena form desde item existente */
 function hydrateFromRow(row: any) {
+  const recIds: string[] = Array.isArray(row?.recipeIds)
+    ? row.recipeIds.map((id: any) => String(id))
+    : row?.recipeId
+    ? [String(row.recipeId)]
+    : []
+
   Object.assign(form, {
     nombre: row?.nombre ?? '',
     precio: row?.precio ?? '',
@@ -48,53 +60,57 @@ function hydrateFromRow(row: any) {
     tipo: row?.tipo ?? '',
     tags: Array.isArray(row?.tags) ? [...row.tags] : [],
     activo: row?.activo ?? true,
-
-    // Reconstruir seleccion: primero el recipeId, luego extras[]
-    recipeIds: [
-      ...([row?.recipeId].filter(Boolean).map((x:any)=>String(x))),
-      ...((Array.isArray(row?.extras) ? row.extras : []).map((x:any)=>String(x)))
-    ]
+    recipeIds: recIds
   })
 }
 
-function startCreate () {
+/** Crear nuevo (limpieza total) */
+function startCreate() {
   isEditing.value = false
   editingId.value = null
-  resetForm()
+  Object.assign(form, {
+    nombre: '',
+    precio: '',
+    porciones: 1,
+    descripcion: '',
+    categoria: '',
+    tipo: '',
+    tags: [],
+    activo: true,
+    recipeIds: []
+  })
   open.value = true
 }
 
-function startEdit (row: any) {
+/** Editar existente */
+function startEdit(row: any) {
   isEditing.value = true
   editingId.value = row?._id ?? null
-  resetForm()
   hydrateFromRow(row)
   open.value = true
 }
 
-async function onSubmit () {
+/** Guardar cambios */
+async function onSubmit() {
   if (!form.nombre?.trim()) {
     alert('El nombre es obligatorio')
     return
   }
 
   const payload: any = {
-    nombre: form.nombre.trim(),
+    ...form,
     precio: Number(form.precio) || 0,
-    porciones: Number(form.porciones) || 1,
-    descripcion: form.descripcion ?? '',
-    categoria: form.categoria ?? '',
-    tipo: form.tipo ?? '',
-    tags: Array.isArray(form.tags) ? form.tags : [],
-    activo: !!form.activo
+    porciones: Number(form.porciones) || 1
   }
 
-  // Compat backend actual:
-  // - primer id => recipeId
-  // - resto => extras[]
-  const ids = Array.isArray(form.recipeIds) ? form.recipeIds.filter(Boolean).map(String) : []
-  payload.recipeId = ids[0] ?? null
-  payload.extras   = ids.slice(1)
+  if (Array.isArray(form.recipeIds)) {
+    if (form.recipeIds.length <= 1) {
+      payload.recipeId = form.recipeIds[0] ?? null
+      delete payload.recipeIds
+    } else {
+      delete payload.recipeId
+    }
+  }
 
   saving.value = true
   try {
@@ -104,6 +120,7 @@ async function onSubmit () {
       await createItem(payload)
     }
     open.value = false
+    fetchMenu()
   } catch (e) {
     console.error(e)
     alert('No se pudo guardar')
@@ -115,11 +132,13 @@ async function onSubmit () {
 
 <template>
   <UContainer class="py-8 space-y-6">
-    <!-- Header -->
+    <!-- HEADER -->
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-bold">Menú</h1>
-        <p class="text-sm text-gray-500">Productos del menú con receta opcional y estado.</p>
+        <p class="text-sm text-gray-500">
+          Productos del menú con receta opcional y estado.
+        </p>
       </div>
       <div class="flex gap-2">
         <UInput
@@ -132,19 +151,33 @@ async function onSubmit () {
       </div>
     </div>
 
-    <!-- Grid de productos -->
-    <div v-if="!loading && filtered.length" class="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-      <UCard v-for="it in filtered" :key="it._id" class="group">
+    <!-- GRID -->
+    <div
+      v-if="!loading && filtered.length"
+      class="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
+    >
+      <UCard
+        v-for="it in filtered"
+        :key="it._id"
+        class="group cursor-pointer hover:bg-muted/30 transition"
+        @click="startEdit(it)"
+      >
         <div class="flex items-start justify-between">
           <div class="min-w-0">
-            <div class="font-medium truncate max-w-[16rem]">{{ it.nombre }}</div>
-            <div class="text-xs text-gray-500">{{ it.categoria || 'Sin categoría' }}</div>
+            <div class="font-medium truncate max-w-[16rem]">
+              {{ it.nombre }}
+            </div>
+            <div class="text-xs text-gray-500">
+              {{ it.categoria || 'Sin categoría' }}
+            </div>
           </div>
-          <UBadge :color="it.activo ? 'green' : 'gray'">{{ it.activo ? 'Activo' : 'Inactivo' }}</UBadge>
+          <UBadge :color="it.activo ? 'green' : 'gray'">
+            {{ it.activo ? 'Activo' : 'Inactivo' }}
+          </UBadge>
         </div>
 
         <div class="mt-3 text-lg font-semibold">
-          ${{ (Number(it.precio)||0).toLocaleString('es-CO') }}
+          ${{ it.precio }}
         </div>
 
         <div class="mt-2 flex flex-wrap gap-1">
@@ -153,8 +186,10 @@ async function onSubmit () {
 
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton size="xs" variant="ghost" @click="startEdit(it)">Editar</UButton>
-            <UButton size="xs" color="red" variant="soft" @click="deleteItem(it._id)">Borrar</UButton>
+            <UButton size="xs" variant="ghost" @click.stop="startEdit(it)">Editar</UButton>
+            <UButton size="xs" color="red" variant="soft" @click.stop="deleteItem(it._id)">
+              Borrar
+            </UButton>
           </div>
         </template>
       </UCard>
@@ -162,9 +197,8 @@ async function onSubmit () {
 
     <p v-else-if="!loading" class="text-sm text-gray-500">Sin productos.</p>
 
-    <!-- Slideover -->
+    <!-- SLIDEOVER -->
     <USlideover v-model:open="open">
-      <!-- HEADER -->
       <template #title>
         {{ isEditing ? 'Editar producto' : 'Nuevo producto' }}
       </template>
@@ -172,26 +206,22 @@ async function onSubmit () {
         Completa los campos para crear el producto.
       </template>
 
-    <!-- BODY -->
-<template #body>
-  <div class="p-4">
-    <AdminMenuForm
-      :model-value="form"
-      :recipe-options="recipes"
-      :recipe-loading="recipesLoading"
-      :category-options="[]"
-      @update:modelValue="(patch:any) => Object.assign(form, patch)"  
-    />
-  </div>
-</template>
+      <template #body>
+        <div class="p-6 space-y-8">
+          <AdminMenuForm
+            v-model="form"
+            :recipe-options="recipes"
+            :recipe-loading="recipesLoading"
+            :category-options="[]"
+          />
+        </div>
+      </template>
 
-
-      <!-- FOOTER -->
       <template #footer>
         <div class="flex items-center justify-between w-full">
           <div class="text-xs text-gray-500">
-            {{ isEditing ? 'Editando' : 'Creando' }}:
-            <b>{{ form.nombre?.trim() || '(sin nombre)' }}</b>
+            {{ isEditing ? 'Editando:' : 'Creando:' }}
+            <b>{{ form.nombre || '(sin nombre)' }}</b>
           </div>
           <div class="flex gap-2">
             <UButton variant="ghost" @click="open = false">Cancelar</UButton>
