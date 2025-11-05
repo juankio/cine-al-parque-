@@ -4,154 +4,102 @@ import { useRoute } from '#imports'
 import { useAdminLayout, type PatternCell } from '~/composables/admin/useAdminLayout'
 import { useAdminShowtimes } from '~/composables/admin/useAdminShowtimes'
 
+import LayoutHeader from '~/components/boss/layout/LayoutHeader.vue'
+import LayoutToolbar from '~/components/boss/layout/LayoutToolbar.vue'
+import LayoutActions from '~/components/boss/layout/LayoutActions.vue'
+
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
+/* ====== contexto ====== */
 const route = useRoute()
 const showtimeId = computed(() => String(route.params.id || ''))
 
-// Showtime info
 const { list, fetchShowtimes } = useAdminShowtimes()
 const showtime = computed(() => list.value.find(s => s._id === showtimeId.value) || null)
-
-onMounted(async () => {
-  if (!showtime.value) {
-    await fetchShowtimes('', { page: 1, pageSize: 100 })
-  }
-})
+onMounted(async () => { if (!showtime.value) await fetchShowtimes('', { page: 1, pageSize: 100 }) })
 
 const { loading, error, generate, setActive } = useAdminLayout()
 
-// ====== Form ======
+/* ====== estado layout ====== */
 const rows = ref(6)
 const cols = ref(6)
 const replace = ref(true)
-
-// patrón 2/4
 const pattern = ref<PatternCell[][]>([])
-function initPattern() {
+
+function initPattern(fill: 'alt'|'2'|'4'|'empty' = 'alt') {
   const r = rows.value, c = cols.value
   pattern.value = Array.from({ length: r }, (_, i) =>
-    Array.from({ length: c }, (_, j) => ((i + j) % 2 === 0 ? '4' : '2'))
+    Array.from({ length: c }, (_, j) => {
+      if (fill === '2') return '2'
+      if (fill === '4') return '4'
+      if (fill === 'empty') return '2'
+      return ((i + j) % 2 === 0) ? '4' : '2'
+    })
   )
 }
-watch([rows, cols], initPattern, { immediate: true })
+watch([rows, cols], () => initPattern('alt'), { immediate: true })
 
 function toggleCell(r: number, c: number) {
   pattern.value[r][c] = pattern.value[r][c] === '4' ? '2' : '4'
 }
 
+/* totales */
+const totalMesas  = computed(() => rows.value * cols.value)
+const totalSillas = computed(() => pattern.value.flat().reduce((a,c) => a + (c==='4'?4:2), 0))
+
+/* acciones backend */
 const msg = ref<string | null>(null)
 
 async function onGenerate() {
   msg.value = null
   if (!showtimeId.value) return
-
   try {
     const res: any = await generate(showtimeId.value, {
-      replace: replace.value,
-      rows: rows.value,
-      cols: cols.value,
-      pattern: pattern.value
+      replace: replace.value, rows: rows.value, cols: cols.value, pattern: pattern.value
     } as any)
-
-    const tables = typeof res?.tables === 'number' ? res.tables : (res?.createdTables ?? 0)
-    const seats  = typeof res?.seats  === 'number' ? res.seats  : (res?.createdSeats ?? 0)
-
-    const fallbackTables = rows.value * cols.value
-    const fallbackSeats = pattern.value.flat().reduce((acc, cell) => acc + (cell === '4' ? 4 : 2), 0)
-
-    msg.value = `Layout generado: ${tables || fallbackTables} mesas / ${seats || fallbackSeats} sillas`
-  } catch {}
+    const mesas = typeof res?.tables === 'number' ? res.tables : (res?.createdTables ?? totalMesas.value)
+    const sillas = typeof res?.seats  === 'number' ? res.seats  : (res?.createdSeats  ?? totalSillas.value)
+    msg.value = `Layout generado: ${mesas} mesas · ${sillas} sillas`
+  } catch (e) { /* ya mostramos error */ }
 }
 
 async function onToggleActive() {
   if (!showtimeId.value) return
-  const current = !!showtime.value?.['active']
-  await setActive(showtimeId.value, !current)
+  const state = !!showtime.value?.['active']
+  await setActive(showtimeId.value, !state)
   await fetchShowtimes('', { page: 1, pageSize: 100 })
 }
-
-const fmtMoney = (n?: number) => typeof n === 'number' ? n.toLocaleString('es-CO') : '0'
 </script>
 
 <template>
   <UContainer class="py-6 space-y-5">
-    <!-- Header -->
-    <div class="flex items-end justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-bold">Layout de sillas</h1>
-        <p class="text-sm text-muted">Define mesas de 2 o 4 puestos por celda y genera el layout.</p>
-
-        <p v-if="showtime" class="mt-1 text-xs text-muted">
-          Showtime: <code>{{ showtime._id }}</code> · Sala: <b>{{ showtime.sala }}</b> ·
-          Precio: $ {{ fmtMoney(showtime.price) }}
-          · Estado:
-          <b :class="showtime.active ? 'text-primary' : 'text-gray-500'">
-            {{ showtime.active ? 'Activo' : 'Inactivo' }}
-          </b>
-        </p>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <UButton :to="`/admin/movies/${showtime?.movieId || ''}/showtimes`" color="gray" variant="outline" size="sm">
-          ← Volver
-        </UButton>
-        <UButton :to="`/showtimes/${showtimeId}`" color="primary" variant="outline" size="sm">
-          Ver público
-        </UButton>
-      </div>
-    </div>
-
-    <!-- Controles -->
-    <UCard class="p-4">
-      <div class="grid gap-3 md:grid-cols-6 items-center">
-        <UFormGroup label="Filas">
-          <UInput v-model.number="rows" type="number" min="1" max="20" class="w-24" />
-        </UFormGroup>
-
-        <UFormGroup label="Columnas">
-          <UInput v-model.number="cols" type="number" min="1" max="20" class="w-24" />
-        </UFormGroup>
-
-        <UCheckbox v-model="replace" label="Reemplazar layout" />
-
-        <div class="text-xs text-muted md:col-span-2">
-          <span class="inline-block rounded-lg border border-default px-2 py-1">2</span> =
-          mesa de 2 &nbsp;·&nbsp;
-          <span class="inline-block rounded-lg border border-primary px-2 py-1 text-primary">4</span> =
-          mesa de 4
-        </div>
-
-        <div class="flex gap-2 justify-end md:col-span-6">
-          <UButton label="Reset patrón" variant="outline" color="gray" @click="initPattern" />
-          <UButton
-            :label="showtime?.active ? 'Desactivar showtime' : 'Activar showtime'"
-            :color="showtime?.active ? 'red' : 'primary'"
-            variant="outline"
-            @click="onToggleActive"
-          />
-        </div>
-      </div>
-    </UCard>
-
-    <!-- Editor grilla (reutilizable) -->
-    <AdminGridLayout
-      :rows="rows"
-      :cols="cols"
-      :pattern="pattern"
-      @toggle="toggleCell"
+    <!-- Header resumen -->
+    <LayoutHeader
+      :showtime="showtime"
+      :showtime-id="showtimeId"
+      :total-mesas="totalMesas"
+      :total-sillas="totalSillas"
     />
 
+    <!-- Toolbar / controles -->
+    <LayoutToolbar
+      v-model:rows="rows"
+      v-model:cols="cols"
+      v-model:replace="replace"
+      :active="!!showtime?.active"
+      @init-pattern="initPattern"
+      @toggle-active="onToggleActive"
+    />
+
+    <!-- Editor grilla -->
+    <AdminGridLayout :rows="rows" :cols="cols" :pattern="pattern" @toggle="toggleCell" />
+
     <!-- Acciones -->
-    <div class="flex items-center gap-3">
-      <UButton
-        :label="loading ? 'Generando…' : 'Generar layout'"
-        color="primary"
-        :loading="loading"
-        @click="onGenerate"
-      />
-      <span v-if="error" class="text-red-500 text-sm">{{ error }}</span>
-      <span v-if="msg" class="text-primary text-sm">{{ msg }}</span>
-    </div>
+    <LayoutActions
+      :loading="loading"
+      :error="error || ''"
+      :message="msg || ''"
+      @generate="onGenerate"
+    />
   </UContainer>
 </template>
