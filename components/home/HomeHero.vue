@@ -72,7 +72,9 @@ const heroMotion = {
 const heroProps = computed(() => ({
   ...attrs,
   ...heroMotion,
-  visibleOnce: true,
+  visibleOnce: {
+    once: true,
+  },
 }))
 
 function onUpdate(value: string) {

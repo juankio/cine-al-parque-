@@ -64,8 +64,8 @@ export const useCombos = () => {
           const rawItems = Array.isArray(response)
             ? response
             : Array.isArray(response?.items)
-            ? response.items
-            : []
+              ? response.items
+              : []
 
           const normalizedTags = tags.map(t => t.toLowerCase())
           const filtered = rawItems.filter((item) => {
@@ -81,10 +81,10 @@ export const useCombos = () => {
           const fallback = filtered.length
             ? filtered
             : rawItems.filter(item => {
-                const cat = String(item.categoria || '').toLowerCase()
-                const tagSet = new Set((item.tags || []).map(t => String(t).toLowerCase()))
-                return cat.includes('combo') || tagSet.has('combo')
-              })
+              const cat = String(item.categoria || '').toLowerCase()
+              const tagSet = new Set((item.tags || []).map(t => String(t).toLowerCase()))
+              return cat.includes('combo') || tagSet.has('combo')
+            })
 
           const items = (fallback.length ? fallback : rawItems).slice(0, limit)
 
@@ -102,6 +102,8 @@ export const useCombos = () => {
           await wait(450 * attempt)
         }
       }
+      console.log(combos.value)
+
       return combos.value
     } finally {
       loading.value = false
