@@ -1,3 +1,4 @@
+import { getQuery } from 'h3'
 import { connectDB } from '@/server/utils/mongoose'
 import { MenuItem } from '@/server/models/MenuItem'
 
@@ -10,7 +11,7 @@ export default defineEventHandler(async (event) => {
 
     const [items, total] = await Promise.all([
         MenuItem.find({ activo: true })
-            .select('nombre precio activo createdAt')
+            .select('nombre precio categoria tags descripcion activo createdAt')
             .sort({ nombre: 1 })
             .skip((page - 1) * pageSize)
             .limit(pageSize)
