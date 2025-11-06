@@ -54,7 +54,8 @@ export default defineEventHandler(async (event) => {
                 sala: 1,
                 price: 1,
                 fechaHora: 1,
-                titulo: '$movie.titulo'
+                titulo: '$movie.titulo',
+                poster: '$movie.poster'
             }
         }
     ])
@@ -64,6 +65,7 @@ export default defineEventHandler(async (event) => {
             _id: s._id,
             movieId: s.movieId,
             titulo: s.titulo,
+            poster: s.poster,
             sala: s.sala,
             price: s.price,
             fechaHora: s.fechaHora

@@ -4,6 +4,7 @@ export interface PublicShowtime {
     movieId: string
     titulo: string
     fechaHora: string   // ISO en UTC (modelo Showtime)
+    poster?: string
     sala?: string | number
     price?: number
     active?: boolean
