@@ -7,13 +7,11 @@ body { @apply bg-default text-default; }
 @keyframes fade-up {
   0% {
     opacity: 0;
-    transform: translateY(18px) scale(0.98);
-    filter: blur(6px);
+    transform: translateY(22px) scale(0.97);
   }
   60% {
     opacity: 1;
-    transform: translateY(-2px) scale(1.01);
-    filter: blur(0);
+    transform: translateY(-1px) scale(1.01);
   }
   100% {
     opacity: 1;
@@ -21,20 +19,22 @@ body { @apply bg-default text-default; }
   }
 }
 
-.animate-home-section {
-  opacity: 0;
-  animation: fade-up 0.75s cubic-bezier(0.19, 1, 0.22, 1) forwards;
-  animation-delay: var(--section-delay, 0s);
-  will-change: transform, opacity;
+.motion-card {
+  perspective: 1200px;
 }
 
-.animate-home-hero {
-  background: linear-gradient(135deg, rgba(255, 26, 26, 0.12), rgba(255, 255, 255, 0));
-  box-shadow: 0 18px 60px -30px rgba(255, 26, 26, 0.5);
-  transition: transform 0.45s ease, box-shadow 0.45s ease;
+.motion-card__inner {
+  position: relative;
+  border-radius: 1.25rem;
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 12px 40px -32px rgba(15, 23, 42, 0.3);
+  overflow: hidden;
+  background-color: inherit;
 }
 
-.animate-home-hero:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 28px 80px -32px rgba(255, 26, 26, 0.65);
+.motion-card__inner:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 26px 80px -42px rgba(15, 23, 42, 0.45);
 }

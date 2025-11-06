@@ -82,12 +82,10 @@ onBeforeUnmount(() => {
 
 <template>
   <UContainer class="py-6 space-y-8">
-    <HomeHero v-model="q" class="animate-home-hero animate-home-section" style="--section-delay: 0s" />
+    <HomeHero v-model="q" />
 
     <HomeBillboard
       v-if="isSearching"
-      class="animate-home-section"
-      style="--section-delay: 0.1s"
       :loading="moviesLoading"
       :error="moviesError"
       :filtered="filteredMovies"
@@ -96,8 +94,6 @@ onBeforeUnmount(() => {
 
     <template v-else>
       <HomeLiveShowtimes
-        class="animate-home-section"
-        style="--section-delay: 0.1s"
         :loading="liveLoading"
         :error="liveError"
         :sections="liveSections"
@@ -105,16 +101,12 @@ onBeforeUnmount(() => {
       />
 
       <HomeCombos
-        class="animate-home-section"
-        style="--section-delay: 0.2s"
         :loading="combosLoading"
         :error="combosError"
         :combos="combos"
       />
 
       <HomeBillboard
-        class="animate-home-section"
-        style="--section-delay: 0.3s"
         :loading="moviesLoading"
         :error="moviesError"
         :filtered="filteredMovies"
