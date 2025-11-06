@@ -28,6 +28,13 @@ export const useShowtimes = () => {
         return []
     }
 
+    type FetchUpcomingOptions = {
+        hours?: number
+        limit?: number
+        silent?: boolean
+        onlyOnChange?: boolean
+    }
+
     function startOfDay(date: Date) {
         return new Date(date.getFullYear(), date.getMonth(), date.getDate())
     }
@@ -38,21 +45,55 @@ export const useShowtimes = () => {
             && a.getDate() === b.getDate()
     }
 
+    function sameShowtime(a: PublicShowtime, b: PublicShowtime) {
+        return a._id === b._id
+            && a.fechaHora === b.fechaHora
+            && (a.sala ?? '') === (b.sala ?? '')
+            && (a.price ?? 0) === (b.price ?? 0)
+            && (a.poster ?? '') === (b.poster ?? '')
+            && (a.titulo ?? '') === (b.titulo ?? '')
+    }
+
+    function hasChanges(prev: PublicShowtime[], next: PublicShowtime[]) {
+        if (prev.length !== next.length) return true
+        for (let i = 0; i < prev.length; i++) {
+            if (!sameShowtime(prev[i], next[i])) return true
+        }
+        return false
+    }
+
     /** Próximos showtimes (ej: próximas 24h). */
-    async function fetchUpcoming(hours = 24, limit = 12) {
-        loading.value = true
-        error.value = null
+    async function fetchUpcoming(options: FetchUpcomingOptions = {}) {
+        const {
+            hours = 24,
+            limit = 12,
+            silent = false,
+            onlyOnChange = false,
+        } = options
+
+        const useSilent = silent && list.value.length > 0
+        if (!useSilent) {
+            loading.value = true
+            error.value = null
+        } else {
+            error.value = null
+        }
         try {
             const resp = await $fetch<ListResp>('/api/showtimes', {
                 query: { upcoming: 1, hours, limit },
                 credentials: 'include',
             })
-            list.value = normalize(resp)
+            const nextList = normalize(resp)
+            if (onlyOnChange && !hasChanges(list.value, nextList)) {
+                return list.value
+            }
+            list.value = nextList
         } catch (e: any) {
-            error.value = e?.data?.message || e?.message || 'No se pudieron cargar las funciones'
-            list.value = []
+            const message = e?.data?.message || e?.message || 'No se pudieron cargar las funciones'
+            error.value = message
+            if (!useSilent) list.value = []
         } finally {
-            loading.value = false
+            if (!useSilent) loading.value = false
         }
         return list.value
     }
@@ -107,9 +148,18 @@ export const useShowtimes = () => {
     })
 
     /** Inicia autorefresco (ms). */
-    function startAutoRefresh(intervalMs = 15000, hours = 24, limit = 12) {
+    function startAutoRefresh(options: FetchUpcomingOptions & { intervalMs?: number } = {}) {
+        const {
+            intervalMs = 15000,
+            hours = 24,
+            limit = 12,
+            silent = true,
+            onlyOnChange = true,
+        } = options
         stopAutoRefresh()
-        timer.value = setInterval(() => { fetchUpcoming(hours, limit) }, intervalMs)
+        timer.value = setInterval(() => {
+            fetchUpcoming({ hours, limit, silent, onlyOnChange }).catch(() => {})
+        }, intervalMs)
     }
     /** Detiene autorefresco. */
     function stopAutoRefresh() {
