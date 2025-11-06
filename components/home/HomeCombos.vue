@@ -1,7 +1,18 @@
 <template>
   <Motion tag="section" v-bind="sectionProps">
-    <Motion tag="h2" class="text-xl font-semibold mb-3 flex items-center gap-2" v-bind="headerMotion">
-      <UIcon name="i-heroicons-fire" class="text-primary" /> Combos para hoy
+    <Motion tag="div" class="flex items-center justify-between mb-3" v-bind="headerMotion">
+      <div class="text-xl font-semibold flex items-center gap-2">
+        <UIcon name="i-heroicons-fire" class="text-primary" /> Combos para hoy
+      </div>
+      <UButton
+        v-if="!props.loading"
+        size="xs"
+        variant="ghost"
+        color="gray"
+        @click="emit('refresh')"
+      >
+        Actualizar
+      </UButton>
     </Motion>
 
     <div v-if="props.loading" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -15,14 +26,18 @@
       </Motion>
     </div>
 
-    <UAlert
-      v-else-if="props.error"
-      color="gray"
-      variant="soft"
-      icon="i-heroicons-exclamation-triangle"
-      :description="props.error"
-      title="No se pudieron cargar los combos"
-    />
+    <div v-else-if="props.error" class="space-y-2">
+      <UAlert
+        color="gray"
+        variant="soft"
+        icon="i-heroicons-exclamation-triangle"
+        :description="props.error"
+        title="No se pudieron cargar los combos"
+      />
+      <UButton size="xs" color="primary" variant="soft" @click="emit('refresh')">
+        Reintentar
+      </UButton>
+    </div>
 
     <div v-else-if="props.combos.length" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <Motion
@@ -32,19 +47,60 @@
         class="motion-card h-full"
         v-bind="cardMotion(idx)"
       >
-        <UCard class="motion-card__inner rounded-2xl hover:bg-primary/5 transition h-full">
-          <div class="flex flex-col gap-3">
-            <div class="min-w-0 space-y-2">
-              <div class="font-semibold text-base truncate">{{ c.nombre }}</div>
-              <div class="text-xs sm:text-sm text-muted">
-                $ {{ money(c.precio) }} <span v-if="c.categoria">- {{ c.categoria }}</span>
+        <UCard class="motion-card__inner rounded-2xl h-full border border-default/40 bg-gradient-to-b from-default/40 to-transparent hover:border-primary/60 transition">
+          <div class="flex flex-col gap-4 h-full">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 space-y-1">
+                <p class="text-[11px] uppercase tracking-wide text-muted flex items-center gap-1">
+                  <UIcon name="i-heroicons-sparkles" class="text-primary" />
+                  Recomendado
+                </p>
+                <div class="font-semibold text-base truncate">{{ c.nombre }}</div>
               </div>
-              <div class="flex flex-wrap gap-1.5">
-                <UBadge v-for="t in (c.tags || [])" :key="t" size="xs" variant="soft" class="capitalize">#{{ t }}</UBadge>
+              <div class="text-right shrink-0">
+                <p class="text-[11px] text-muted">Desde</p>
+                <p class="text-lg font-bold text-primary">$ {{ money(c.precio) }}</p>
               </div>
             </div>
-            <div class="flex sm:justify-end">
-              <UButton size="sm" color="primary" :to="`/menu`" variant="outline" class="w-full sm:w-auto">Ver</UButton>
+
+            <p v-if="c.descripcion" class="text-sm text-muted leading-snug line-clamp-2">
+              {{ c.descripcion }}
+            </p>
+
+            <div class="flex flex-wrap gap-2 text-xs">
+              <UBadge
+                v-if="c.categoria"
+                size="sm"
+                variant="soft"
+                color="primary"
+                class="capitalize px-2.5 py-1 rounded-full text-[11px]"
+              >
+                {{ c.categoria }}
+              </UBadge>
+              <span
+                v-for="t in (c.tags || [])"
+                :key="t"
+                class="inline-flex items-center gap-1 rounded-full border border-default/30 px-2.5 py-1 text-[11px] uppercase tracking-wide text-muted"
+              >
+                <UIcon name="i-heroicons-hashtag" class="text-primary/70" />
+                {{ t }}
+              </span>
+            </div>
+
+            <div class="mt-auto flex items-center justify-between gap-3 pt-3 border-t border-default/40">
+              <span class="text-xs text-muted">
+                Listo en minutos
+              </span>
+              <UButton
+                size="sm"
+                color="primary"
+                :to="`/menu`"
+                variant="solid"
+                icon="i-heroicons-arrow-right"
+                trailing
+              >
+                Ver
+              </UButton>
             </div>
           </div>
         </UCard>
@@ -70,6 +126,10 @@ const props = defineProps<{
   loading: boolean
   error: string | null
   combos: ComboItem[]
+}>()
+
+const emit = defineEmits<{
+  (event: 'refresh'): void
 }>()
 
 type MotionPreset = {

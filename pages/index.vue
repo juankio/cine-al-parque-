@@ -3,6 +3,7 @@ definePageMeta({ ssr: false })
 
 import { useShowtimes } from '~/composables/useShowtimes'
 import { useMovies } from '~/composables/useMovies'
+import { useCombos } from '~/composables/useCombos'
 
 const q = ref('')
 
@@ -35,26 +36,16 @@ const liveSections = computed(() => [
 ].filter(section => section.items.length))
 
 // ===== Combos =====
-type ComboItem = { _id: string; nombre: string; precio: number; categoria?: string; tags?: string[] }
-const combos = ref<ComboItem[]>([])
-const combosLoading = ref(false)
-const combosError = ref<string | null>(null)
+const {
+  combos,
+  loading: combosLoading,
+  error: combosError,
+  fetchCombos,
+  refresh: refreshCombos,
+} = useCombos()
 
-async function fetchCombos() {
-  combosLoading.value = true
-  combosError.value = null
-  try {
-    const res = await $fetch<any>('/api/menu-items', {
-      query: { page: 1, pageSize: 6, categoria: 'Combo' },
-    })
-    const items: any[] = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : []
-    combos.value = items.sort((a, b) => (b?.precio || 0) - (a?.precio || 0))
-  } catch (e: any) {
-    combosError.value = e?.data?.message || e?.message || 'No se pudieron cargar los combos'
-    combos.value = []
-  } finally {
-    combosLoading.value = false
-  }
+const handleComboFocus = () => {
+  fetchCombos().catch(() => {})
 }
 onMounted(async () => {
   // Peliculas
@@ -73,10 +64,17 @@ onMounted(async () => {
   })
 
   // Combos
-  await fetchCombos()
+  await fetchCombos({ force: true })
+
+  if (process.client) {
+    window.addEventListener('focus', handleComboFocus)
+  }
 })
 onBeforeUnmount(() => {
   stopAutoRefresh()
+  if (process.client) {
+    window.removeEventListener('focus', handleComboFocus)
+  }
 })
 </script>
 
@@ -104,6 +102,7 @@ onBeforeUnmount(() => {
         :loading="combosLoading"
         :error="combosError"
         :combos="combos"
+        @refresh="refreshCombos()"
       />
 
       <HomeBillboard

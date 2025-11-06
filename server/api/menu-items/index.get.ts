@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
 
     const categoria = toStringSafe(q.categoria)
     if (categoria) {
-        filters.categoria = { $regex: new RegExp(`^${escapeRegex(categoria)}$`, 'i') }
+        filters.categoria = { $regex: new RegExp(escapeRegex(categoria), 'i') }
     }
 
     const tags = parseTags(q.tags)
