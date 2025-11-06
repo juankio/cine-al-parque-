@@ -47,7 +47,7 @@
         class="motion-card h-full"
         v-bind="cardMotion(idx)"
       >
-        <UCard class="motion-card__inner rounded-2xl h-full border border-default/40 bg-gradient-to-b from-default/40 to-transparent hover:border-primary/60 transition">
+        <UCard class="motion-card__inner rounded-2xl h-full border border-default/40 bg-white/90 dark:bg-slate-900/90 hover:border-primary/60 transition shadow-[0_15px_35px_rgba(15,23,42,.2)] dark:shadow-[0_20px_40px_rgba(0,0,0,.45)] backdrop-blur">
           <div class="flex flex-col gap-4 h-full">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0 space-y-1">

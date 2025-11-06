@@ -53,7 +53,7 @@
             class="motion-card h-full"
             v-bind="cardMotion(cardIndex)"
           >
-            <UCard class="motion-card__inner rounded-2xl h-full">
+            <UCard class="motion-card__inner rounded-2xl h-full border border-default/40 bg-white/90 dark:bg-slate-900/90 shadow-[0_12px_30px_rgba(15,23,42,.18)] dark:shadow-[0_18px_36px_rgba(0,0,0,.4)] backdrop-blur transition hover:border-primary/60">
               <div class="flex flex-col sm:flex-row gap-4 sm:gap-3 items-start sm:items-center">
                 <img :src="s.poster || '/favicon.ico'" class="w-full sm:w-20 h-40 sm:h-24 object-cover rounded-lg border border-default/60" />
                 <div class="min-w-0 flex-1 space-y-2 text-left">

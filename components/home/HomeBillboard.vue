@@ -30,7 +30,7 @@
         class="motion-card h-full"
         v-bind="cardMotion(idx)"
       >
-        <UCard class="motion-card__inner rounded-2xl hover:bg-muted/30 transition h-full">
+        <UCard class="motion-card__inner rounded-2xl h-full border border-default/40 bg-white/90 dark:bg-slate-900/90 transition hover:border-primary/60 shadow-[0_12px_30px_rgba(15,23,42,.18)] dark:shadow-[0_18px_36px_rgba(0,0,0,.4)]">
           <img :src="m.poster || '/favicon.ico'" class="w-full h-52 sm:h-48 md:h-56 object-cover rounded-lg border border-default/60" />
           <div class="mt-3 space-y-2">
             <div class="font-semibold text-base truncate sm:truncate-none">{{ m.titulo }}</div>
