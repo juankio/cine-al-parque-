@@ -111,7 +111,6 @@ type MotionPreset = {
 }
 
 const attrs = useAttrs()
-const visibleOnceConfig = { once: true } as const
 
 const rollBottom = (delay = 0): MotionPreset => ({
   initial: {
@@ -151,19 +150,17 @@ const withHoverTilt = (preset: MotionPreset): MotionPreset => ({
 })
 
 const sectionMotion = rollBottom(0.05)
-const headerMotion = { ...rollBottom(0.08), visibleOnce: visibleOnceConfig }
-const skeletonMotion = (index: number) => ({ ...rollBottom(0.1 + index * 0.05), visibleOnce: visibleOnceConfig })
-const listMotion = (index: number) => ({ ...rollBottom(0.12 + index * 0.08), visibleOnce: visibleOnceConfig })
-const subheaderMotion = (index: number) => ({ ...rollBottom(0.14 + index * 0.08), visibleOnce: visibleOnceConfig })
+const headerMotion = rollBottom(0.08)
+const skeletonMotion = (index: number) => rollBottom(0.1 + index * 0.05)
+const listMotion = (index: number) => rollBottom(0.12 + index * 0.08)
+const subheaderMotion = (index: number) => rollBottom(0.14 + index * 0.08)
 const cardMotion = (index: number) => ({
   ...withHoverTilt(rollBottom(0.18 + index * 0.06)),
-  visibleOnce: visibleOnceConfig,
 })
 
 const sectionProps = computed(() => ({
   ...attrs,
   ...sectionMotion,
-  visibleOnce: visibleOnceConfig,
 }))
 
 function fmtTime(iso: string) {

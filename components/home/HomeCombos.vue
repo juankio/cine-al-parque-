@@ -139,7 +139,6 @@ type MotionPreset = {
 }
 
 const attrs = useAttrs()
-const visibleOnceConfig = { once: true } as const
 
 const rollBottom = (delay = 0): MotionPreset => ({
   initial: {
@@ -179,17 +178,15 @@ const withHoverLift = (preset: MotionPreset): MotionPreset => ({
 })
 
 const sectionMotion = rollBottom(0.05)
-const headerMotion = { ...rollBottom(0.07), visibleOnce: visibleOnceConfig }
-const skeletonMotion = (index: number) => ({ ...rollBottom(0.09 + index * 0.04), visibleOnce: visibleOnceConfig })
+const headerMotion = rollBottom(0.07)
+const skeletonMotion = (index: number) => rollBottom(0.09 + index * 0.04)
 const cardMotion = (index: number) => ({
   ...withHoverLift(rollBottom(0.12 + index * 0.06)),
-  visibleOnce: visibleOnceConfig,
 })
 
 const sectionProps = computed(() => ({
   ...attrs,
   ...sectionMotion,
-  visibleOnce: visibleOnceConfig,
 }))
 
 function money(n?: number) {
