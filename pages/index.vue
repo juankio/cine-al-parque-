@@ -17,6 +17,7 @@ const filteredMovies = computed(() => {
   if (!term) return movies.value || []
   return (movies.value || []).filter(m => (m.titulo || '').toLowerCase().includes(term))
 })
+const isSearching = computed(() => q.value.trim().length > 0)
 
 // ===== En vivo hoy =====
 const {
@@ -81,26 +82,44 @@ onBeforeUnmount(() => {
 
 <template>
   <UContainer class="py-6 space-y-8">
-    <HomeHero v-model="q" />
-
-    <HomeLiveShowtimes
-      :loading="liveLoading"
-      :error="liveError"
-      :sections="liveSections"
-      @refresh="fetchUpcoming({ hours: LIVE_REFRESH_HOURS, limit: LIVE_REFRESH_LIMIT })"
-    />
-
-    <HomeCombos
-      :loading="combosLoading"
-      :error="combosError"
-      :combos="combos"
-    />
+    <HomeHero v-model="q" class="animate-home-hero animate-home-section" style="--section-delay: 0s" />
 
     <HomeBillboard
+      v-if="isSearching"
+      class="animate-home-section"
+      style="--section-delay: 0.1s"
       :loading="moviesLoading"
       :error="moviesError"
       :filtered="filteredMovies"
       :upcoming-showtimes="upcomingShowtimes"
     />
+
+    <template v-else>
+      <HomeLiveShowtimes
+        class="animate-home-section"
+        style="--section-delay: 0.1s"
+        :loading="liveLoading"
+        :error="liveError"
+        :sections="liveSections"
+        @refresh="fetchUpcoming({ hours: LIVE_REFRESH_HOURS, limit: LIVE_REFRESH_LIMIT })"
+      />
+
+      <HomeCombos
+        class="animate-home-section"
+        style="--section-delay: 0.2s"
+        :loading="combosLoading"
+        :error="combosError"
+        :combos="combos"
+      />
+
+      <HomeBillboard
+        class="animate-home-section"
+        style="--section-delay: 0.3s"
+        :loading="moviesLoading"
+        :error="moviesError"
+        :filtered="filteredMovies"
+        :upcoming-showtimes="upcomingShowtimes"
+      />
+    </template>
   </UContainer>
 </template>

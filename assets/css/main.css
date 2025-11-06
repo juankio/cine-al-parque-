@@ -3,3 +3,38 @@
 
 /* Base visual usando tokens de Nuxt UI v4 */
 body { @apply bg-default text-default; }
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+    filter: blur(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.01);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-home-section {
+  opacity: 0;
+  animation: fade-up 0.75s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+  animation-delay: var(--section-delay, 0s);
+  will-change: transform, opacity;
+}
+
+.animate-home-hero {
+  background: linear-gradient(135deg, rgba(255, 26, 26, 0.12), rgba(255, 255, 255, 0));
+  box-shadow: 0 18px 60px -30px rgba(255, 26, 26, 0.5);
+  transition: transform 0.45s ease, box-shadow 0.45s ease;
+}
+
+.animate-home-hero:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 28px 80px -32px rgba(255, 26, 26, 0.65);
+}
