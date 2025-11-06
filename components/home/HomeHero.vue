@@ -3,17 +3,17 @@
     tag="div"
     v-bind="heroProps"
   >
-    <UCard class="rounded-2xl p-6 border border-default/60 bg-default/80 backdrop-blur-sm shadow-lg">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-bold">Cine al Parque</h1>
-          <p class="text-sm text-muted mt-1">
+    <UCard class="rounded-2xl p-6 md:p-8 border border-default/60 bg-default/80 backdrop-blur-sm shadow-lg">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div class="space-y-3 text-center md:text-left">
+          <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight">Cine al Parque</h1>
+          <p class="text-sm sm:text-base text-muted">
             Compra tu combo, elige funcion y reserva tu mesa en minutos.
           </p>
         </div>
         <UInput
           :model-value="props.modelValue"
-          class="w-full md:w-96"
+          class="w-full md:w-96 lg:w-[28rem]"
           icon="i-heroicons-magnifying-glass-20-solid"
           placeholder="Buscar pelicula..."
           @update:model-value="onUpdate"
@@ -44,7 +44,7 @@ const heroMotion = {
     scale: 0.92,
     transformOrigin: 'bottom center',
   },
-  visible: {
+  enter: {
     opacity: 1,
     y: 0,
     rotateX: 0,

@@ -33,17 +33,19 @@
         v-bind="cardMotion(idx)"
       >
         <UCard class="motion-card__inner rounded-2xl hover:bg-primary/5 transition h-full">
-          <div class="flex items-start justify-between">
-            <div class="min-w-0">
-              <div class="font-semibold truncate">{{ c.nombre }}</div>
-              <div class="text-xs text-muted mt-0.5">
+          <div class="flex flex-col gap-3">
+            <div class="min-w-0 space-y-2">
+              <div class="font-semibold text-base truncate">{{ c.nombre }}</div>
+              <div class="text-xs sm:text-sm text-muted">
                 $ {{ money(c.precio) }} <span v-if="c.categoria">- {{ c.categoria }}</span>
               </div>
-              <div class="mt-1 flex flex-wrap gap-1">
-                <UBadge v-for="t in (c.tags || [])" :key="t" size="xs" variant="soft">#{{ t }}</UBadge>
+              <div class="flex flex-wrap gap-1.5">
+                <UBadge v-for="t in (c.tags || [])" :key="t" size="xs" variant="soft" class="capitalize">#{{ t }}</UBadge>
               </div>
             </div>
-            <UButton size="xs" color="primary" :to="`/menu`" variant="outline">Ver</UButton>
+            <div class="flex sm:justify-end">
+              <UButton size="sm" color="primary" :to="`/menu`" variant="outline" class="w-full sm:w-auto">Ver</UButton>
+            </div>
           </div>
         </UCard>
       </Motion>
@@ -72,7 +74,7 @@ const props = defineProps<{
 
 type MotionPreset = {
   initial: Record<string, any>
-  visible: Record<string, any>
+  enter: Record<string, any>
   hover?: Record<string, any>
 }
 
@@ -86,7 +88,7 @@ const rollBottom = (delay = 0): MotionPreset => ({
     scale: 0.95,
     transformOrigin: 'bottom center',
   },
-  visible: {
+  enter: {
     opacity: 1,
     y: 0,
     rotateX: 0,

@@ -54,17 +54,18 @@
             v-bind="cardMotion(cardIndex)"
           >
             <UCard class="motion-card__inner rounded-2xl h-full">
-              <div class="flex gap-3 items-start">
-                <img :src="s.poster || '/favicon.ico'" class="w-14 h-20 object-cover rounded-lg border border-default/60" />
-            <div class="min-w-0 flex-1">
-                  <div class="font-medium truncate">{{ s.titulo || 'Sin titulo' }}</div>
-                  <div class="text-xs text-muted mt-0.5">
-                    {{ fmtTime(s.fechaHora) }} - Sala {{ s.sala || '-' }} - $ {{ money(s.price) }}
+              <div class="flex flex-col sm:flex-row gap-4 sm:gap-3 items-start sm:items-center">
+                <img :src="s.poster || '/favicon.ico'" class="w-full sm:w-20 h-40 sm:h-24 object-cover rounded-lg border border-default/60" />
+                <div class="min-w-0 flex-1 space-y-2 text-left">
+                  <div class="font-medium text-base truncate sm:truncate-none">{{ s.titulo || 'Sin titulo' }}</div>
+                  <div class="text-xs sm:text-sm text-muted">
+                    {{ fmtTime(s.fechaHora) }} • Sala {{ s.sala || '-' }} • $ {{ money(s.price) }}
                   </div>
-                  <div class="mt-2">
+                  <div class="pt-1">
                     <UButton
                       :to="`/showtimes/${s._id}`"
-                      size="xs"
+                      class="w-full sm:w-auto"
+                      size="sm"
                       color="primary"
                       variant="solid"
                     >Reservar</UButton>
@@ -105,7 +106,7 @@ const hasSections = computed(() => props.sections.length > 0)
 
 type MotionPreset = {
   initial: Record<string, any>
-  visible: Record<string, any>
+  enter: Record<string, any>
   hover?: Record<string, any>
 }
 
@@ -119,7 +120,7 @@ const rollBottom = (delay = 0): MotionPreset => ({
     scale: 0.94,
     transformOrigin: 'bottom center',
   },
-  visible: {
+  enter: {
     opacity: 1,
     y: 0,
     rotateX: 0,

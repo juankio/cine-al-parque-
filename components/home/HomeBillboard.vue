@@ -31,18 +31,20 @@
         v-bind="cardMotion(idx)"
       >
         <UCard class="motion-card__inner rounded-2xl hover:bg-muted/30 transition h-full">
-          <img :src="m.poster || '/favicon.ico'" class="w-full h-48 object-cover rounded-lg border border-default/60" />
-          <div class="mt-3">
-            <div class="font-semibold truncate">{{ m.titulo }}</div>
-            <div class="text-xs text-muted">
-              {{ m.clasificacion || '-' }} - {{ m.duracion ? `${m.duracion} min` : '-' }}
+          <img :src="m.poster || '/favicon.ico'" class="w-full h-52 sm:h-48 md:h-56 object-cover rounded-lg border border-default/60" />
+          <div class="mt-3 space-y-2">
+            <div class="font-semibold text-base truncate sm:truncate-none">{{ m.titulo }}</div>
+            <div class="text-xs sm:text-sm text-muted flex flex-wrap gap-1.5">
+              <span>{{ m.clasificacion || '-' }}</span>
+              <span>•</span>
+              <span>{{ m.duracion ? `${m.duracion} min` : '-' }}</span>
             </div>
 
             <div class="mt-2 flex flex-wrap gap-2">
               <UButton
                 v-for="s in props.upcomingShowtimes(m.id, 3)"
                 :key="s.id"
-                size="xs"
+                size="sm"
                 variant="outline"
                 color="primary"
                 :to="`/showtimes/${s.id}`"
@@ -72,7 +74,7 @@ const props = defineProps<{
 
 type MotionPreset = {
   initial: Record<string, any>
-  visible: Record<string, any>
+  enter: Record<string, any>
   hover?: Record<string, any>
 }
 
@@ -86,7 +88,7 @@ const rollBottom = (delay = 0): MotionPreset => ({
     scale: 0.95,
     transformOrigin: 'bottom center',
   },
-  visible: {
+  enter: {
     opacity: 1,
     y: 0,
     rotateX: 0,

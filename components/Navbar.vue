@@ -1,5 +1,12 @@
-<script setup>
+<script setup lang="ts">
+import type { NavigationMenuItem } from '@nuxt/ui'
 import { useAuth } from '~/composables/useAuth'
+
+const route = useRoute()
+const colorMode = useColorMode()
+const toggleTheme = () => {
+  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+}
 
 const { user, logout, fetchMe } = useAuth()
 const me = computed(() => user.value ?? null)
@@ -8,83 +15,137 @@ onMounted(() => {
   if (!user.value) fetchMe().catch(() => {})
 })
 
-const route = useRoute()
+const baseItems = computed<NavigationMenuItem[]>(() => [
+  {
+    label: 'Inicio',
+    icon: 'i-heroicons-home-modern',
+    to: '/',
+    active: route.path === '/',
+  },
+  {
+    label: 'Cartelera',
+    icon: 'i-heroicons-film',
+    to: '/#cartelera',
+    active: route.hash === '#cartelera' || route.path === '/#cartelera',
+  },
+  {
+    label: 'Reservas',
+    icon: 'i-heroicons-ticket',
+    to: '/reservations',
+    active: route.path.startsWith('/reservations'),
+  },
+  {
+    label: 'Combos',
+    icon: 'i-heroicons-sparkles',
+    to: '/menu',
+    active: route.path.startsWith('/menu'),
+  },
+])
 
-// Color mode (Nuxt)
-const colorMode = useColorMode()
-const isDark = computed(() => colorMode.value === 'dark')
-const toggleTheme = () => {
-  colorMode.preference = isDark.value ? 'light' : 'dark'
-}
-
-// Admin helpers
-const isAdmin = computed(() => !!me.value?.isAdmin)
-const adminActive = computed(() => route.path.startsWith('/admin'))
+const navItems = computed<NavigationMenuItem[]>(() => {
+  const items = [...baseItems.value]
+  if (me.value?.isAdmin) {
+    items.push({
+      label: 'Admin',
+      icon: 'i-heroicons-shield-check',
+      to: '/admin',
+      active: route.path.startsWith('/admin'),
+    })
+  }
+  return items
+})
 </script>
 
 <template>
-  <header class="sticky top-0 z-40 border-b border-default bg-default/80 backdrop-blur transition-colors">
-    <UContainer>
-      <nav class="flex h-14 items-center justify-between gap-3">
-        <!-- Logo -->
-        <NuxtLink to="/" class="flex items-center gap-2 shrink-0">
-          <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20 text-sm font-bold text-primary">
-            🎬
+  <UHeader
+    :links="navItems"
+    mode="drawer"
+    :menu="{
+      direction: 'bottom',
+      snapPoints: [0.5, 0.85],
+      activeSnapPoint: 0.5,
+      content: { class: 'rounded-t-3xl max-h-[85vh]' },
+    }"
+    class="border-b border-default bg-default/90 backdrop-blur supports-[backdrop-filter]:bg-default/70"
+  >
+    <template #title>
+      <NuxtLink to="/" class="flex items-center gap-2">
+        <UAvatar
+          icon="i-heroicons-film-20-solid"
+          size="sm"
+          class="rounded-xl bg-primary/15 text-primary"
+        />
+        <span class="hidden sm:inline text-base font-semibold tracking-tight">
+          Cine al Parque
+        </span>
+      </NuxtLink>
+    </template>
+
+    <UNavigationMenu :items="navItems" class="hidden lg:flex" />
+
+    <template #right>
+      <UColorModeButton
+        variant="ghost"
+        color="gray"
+        aria-label="Cambiar tema"
+      />
+
+      <template v-if="me">
+        <NuxtLink
+          to="/me"
+          class="hidden sm:flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors hover:bg-muted/50"
+        >
+          <UAvatar
+            :alt="me.name"
+            size="sm"
+            class="bg-primary/10 text-primary"
+          >
+            {{ me.name?.[0]?.toUpperCase() || 'U' }}
+          </UAvatar>
+          <span class="text-sm font-medium max-w-[120px] truncate">
+            {{ me.name }}
           </span>
-          <span class="text-sm font-semibold tracking-wide">Cine al Parque</span>
         </NuxtLink>
+        <UButton
+          icon="i-heroicons-arrow-right-start-on-rectangle"
+          variant="ghost"
+          color="gray"
+          aria-label="Cerrar sesión"
+          @click="logout"
+        />
+      </template>
 
-        <!-- Right side: Admin (condicional) + Tema + Usuario/Login -->
-        <div class="flex items-center gap-2">
-          <!-- Botón Admin solo si es admin -->
-          <UButton
-            v-if="isAdmin"
-            :to="'/admin'"
-            size="sm"
-            color="primary"
-            :variant="adminActive ? 'solid' : 'ghost'"
-            class="hidden sm:inline-flex"
-          >
-            Admin
-          </UButton>
+      <template v-else>
+        <UButton to="/login" color="primary" variant="soft">
+          Entrar
+        </UButton>
+      </template>
+    </template>
 
-          <!-- Toggle tema -->
-          <UButton
-            :icon="isDark ? 'i-heroicons-moon-20-solid' : 'i-heroicons-sun-20-solid'"
-            variant="ghost"
-            color="gray"
-            size="sm"
-            class="gap-2"
-            @click="toggleTheme"
-          >
-            <span class="hidden sm:inline text-xs">{{ isDark ? 'Oscuro' : 'Claro' }}</span>
-          </UButton>
+    <template #content="{ close }">
+      <div class="px-4 py-4 space-y-4">
+        <UNavigationMenu
+          :items="navItems"
+          orientation="vertical"
+          class="-mx-2 rounded-xl border border-default/40"
+        />
 
-          <!-- Usuario / Login -->
+        <div class="grid gap-2">
           <template v-if="me">
-            <NuxtLink to="/me" class="flex items-center gap-2">
-              <UAvatar :alt="me.name" size="xs" class="bg-primary/10 text-primary">
-                {{ me.name?.[0]?.toUpperCase() || 'U' }}
-              </UAvatar>
-              <span class="hidden sm:inline text-xs">{{ me.name }}</span>
-            </NuxtLink>
-            <UButton
-              size="sm"
-              variant="ghost"
-              color="gray"
-              icon="i-heroicons-arrow-right-start-on-rectangle"
-              @click="logout"
-              aria-label="Cerrar sesión"
-              title="Cerrar sesión"
-            />
+            <UButton block color="primary" variant="soft" to="/me" @click="close">
+              Perfil
+            </UButton>
+            <UButton block color="red" variant="ghost" @click="logout">
+              Cerrar sesión
+            </UButton>
           </template>
           <template v-else>
-            <UButton to="/login" size="sm" color="primary" variant="soft">
+            <UButton block color="primary" to="/login" @click="close">
               Entrar
             </UButton>
           </template>
         </div>
-      </nav>
-    </UContainer>
-  </header>
+      </div>
+    </template>
+  </UHeader>
 </template>
