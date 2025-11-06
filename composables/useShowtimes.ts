@@ -28,6 +28,16 @@ export const useShowtimes = () => {
         return []
     }
 
+    function startOfDay(date: Date) {
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    }
+
+    function isSameDay(a: Date, b: Date) {
+        return a.getFullYear() === b.getFullYear()
+            && a.getMonth() === b.getMonth()
+            && a.getDate() === b.getDate()
+    }
+
     /** Próximos showtimes (ej: próximas 24h). */
     async function fetchUpcoming(hours = 24, limit = 12) {
         loading.value = true
@@ -66,6 +76,25 @@ export const useShowtimes = () => {
         return list.value
     }
 
+    /** Funciones de hoy (horario local). */
+    const today = computed(() => {
+        const todayRef = startOfDay(new Date())
+        return list.value.filter(s => {
+            const date = new Date(s.fechaHora)
+            return isSameDay(date, todayRef)
+        })
+    })
+
+    /** Funciones de mañana (horario local). */
+    const tomorrow = computed(() => {
+        const tomorrowRef = startOfDay(new Date())
+        tomorrowRef.setDate(tomorrowRef.getDate() + 1)
+        return list.value.filter(s => {
+            const date = new Date(s.fechaHora)
+            return isSameDay(date, tomorrowRef)
+        })
+    })
+
     /** Agrupa por hora (HH:mm) útil para chips/etiquetas. */
     const byHour = computed(() => {
         const map = new Map<string, PublicShowtime[]>()
@@ -92,7 +121,7 @@ export const useShowtimes = () => {
 
     return {
         // state
-        loading, error, list, byHour,
+        loading, error, list, today, tomorrow, byHour,
         // fetchers
         fetchUpcoming, fetchRange,
         // refresh

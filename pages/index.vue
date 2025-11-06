@@ -15,7 +15,20 @@ const filteredMovies = computed(() => {
 })
 
 // ===== En vivo hoy (showtimes públicos) =====
-const { loading: liveLoading, error: liveError, list: live, fetchUpcoming, startAutoRefresh, stopAutoRefresh } = useShowtimes()
+const {
+  loading: liveLoading,
+  error: liveError,
+  list: live,
+  today: liveToday,
+  tomorrow: liveTomorrow,
+  fetchUpcoming,
+  startAutoRefresh,
+  stopAutoRefresh,
+} = useShowtimes()
+const liveSections = computed(() => [
+  { id: 'today', label: 'Hoy', items: liveToday.value },
+  { id: 'tomorrow', label: 'Mañana', items: liveTomorrow.value },
+].filter(section => section.items.length))
 
 // ===== Combos (menú) =====
 type ComboItem = { _id: string; nombre: string; precio: number; categoria?: string; tags?: string[] }
@@ -51,8 +64,8 @@ onMounted(async () => {
   list.forEach(m => { fetchShowtimes(m.id).catch(() => {}) })
 
   // En vivo hoy
-  await fetchUpcoming(24, 8)
-  startAutoRefresh(15000, 24, 8)
+  await fetchUpcoming(48, 16)
+  startAutoRefresh(15000, 48, 16)
 
   // Combos
   await fetchCombos()
@@ -89,12 +102,12 @@ onBeforeUnmount(() => {
           <UIcon name="i-heroicons-bolt" class="text-primary" /> En vivo hoy
         </h2>
         <UButton
-          v-if="live.length"
+          v-if="liveSections.length"
           size="xs"
           variant="ghost"
           color="gray"
           :loading="liveLoading"
-          @click="fetchUpcoming(24, 8)"
+          @click="fetchUpcoming(48, 16)"
         >Actualizar</UButton>
       </div>
 
@@ -110,29 +123,36 @@ onBeforeUnmount(() => {
         title="No se pudieron cargar las funciones"
       />
 
-      <div v-else-if="live.length" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <UCard v-for="s in live" :key="s._id" class="rounded-2xl">
-          <div class="flex gap-3 items-start">
-            <img :src="s.poster || '/favicon.ico'" class="w-14 h-20 object-cover rounded-lg border border-default/60" />
-            <div class="min-w-0 flex-1">
-              <div class="font-medium truncate">{{ s.titulo || 'Sin título' }}</div>
-              <div class="text-xs text-muted mt-0.5">
-                {{ fmtTime(s.fechaHora) }} · Sala {{ s.sala || '—' }} · $ {{ money(s.price) }}
-              </div>
-              <div class="mt-2">
-                <UButton
-                  :to="`/showtimes/${s._id}`"
-                  size="xs"
-                  color="primary"
-                  variant="solid"
-                >Reservar</UButton>
-              </div>
-            </div>
+      <div v-else-if="liveSections.length" class="space-y-5">
+        <div v-for="section in liveSections" :key="section.id" class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold uppercase tracking-wide text-muted">{{ section.label }}</h3>
           </div>
-        </UCard>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <UCard v-for="s in section.items" :key="s._id" class="rounded-2xl">
+              <div class="flex gap-3 items-start">
+                <img :src="s.poster || '/favicon.ico'" class="w-14 h-20 object-cover rounded-lg border border-default/60" />
+                <div class="min-w-0 flex-1">
+                  <div class="font-medium truncate">{{ s.titulo || 'Sin título' }}</div>
+                  <div class="text-xs text-muted mt-0.5">
+                    {{ fmtTime(s.fechaHora) }} · Sala {{ s.sala || '—' }} · $ {{ money(s.price) }}
+                  </div>
+                  <div class="mt-2">
+                    <UButton
+                      :to="`/showtimes/${s._id}`"
+                      size="xs"
+                      color="primary"
+                      variant="solid"
+                    >Reservar</UButton>
+                  </div>
+                </div>
+              </div>
+            </UCard>
+          </div>
+        </div>
       </div>
 
-      <EmptyState v-else description="No hay funciones próximas en las próximas 24 horas." />
+      <EmptyState v-else description="No hay funciones próximas en las próximas 48 horas." />
     </section>
 
     <!-- COMBOS DESTACADOS -->
