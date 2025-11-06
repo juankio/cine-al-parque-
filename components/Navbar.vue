@@ -22,12 +22,7 @@ const baseItems = computed<NavigationMenuItem[]>(() => [
     to: '/',
     active: route.path === '/',
   },
-  {
-    label: 'Cartelera',
-    icon: 'i-heroicons-film',
-    to: '/#cartelera',
-    active: route.hash === '#cartelera' || route.path === '/#cartelera',
-  },
+ 
   {
     label: 'Reservas',
     icon: 'i-heroicons-ticket',

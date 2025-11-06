@@ -82,13 +82,19 @@ onBeforeUnmount(() => {
   <UContainer class="py-6 space-y-8">
     <HomeHero v-model="q" />
 
-    <HomeBillboard
-      v-if="isSearching"
-      :loading="moviesLoading"
-      :error="moviesError"
-      :filtered="filteredMovies"
-      :upcoming-showtimes="upcomingShowtimes"
-    />
+    <template v-if="isSearching">
+      <div
+        id="cartelera"
+        class="h-0"
+        aria-hidden="true"
+      />
+      <HomeBillboard
+        :loading="moviesLoading"
+        :error="moviesError"
+        :filtered="filteredMovies"
+        :upcoming-showtimes="upcomingShowtimes"
+      />
+    </template>
 
     <template v-else>
       <HomeLiveShowtimes
@@ -105,6 +111,11 @@ onBeforeUnmount(() => {
         @refresh="refreshCombos()"
       />
 
+      <div
+        id="cartelera"
+        class="h-0"
+        aria-hidden="true"
+      />
       <HomeBillboard
         :loading="moviesLoading"
         :error="moviesError"
