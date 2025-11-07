@@ -10,9 +10,11 @@ defineProps<{
 </script>
 
 <template>
-  <UFormGroup :label="label" :name="name">
+  <label class="auth-field">
+    <span class="auth-field__label">{{ label }}</span>
     <UInput
       v-model="model"
+      :id="name"
       :type="show ? 'text' : 'password'"
       icon="i-heroicons-lock-closed"
       :autocomplete="autocomplete || 'current-password'"
@@ -22,10 +24,27 @@ defineProps<{
       color="gray"
       variant="link"
       size="xs"
-      class="mt-1"
-      @click="show = !show"
+      class="self-end -mt-1"
+      @click.prevent="show = !show"
     >
       {{ show ? 'Ocultar' : 'Ver' }} contraseña
     </UButton>
-  </UFormGroup>
+  </label>
 </template>
+
+<style scoped>
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.auth-field__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.7);
+}
+:global(.login-card__form) .auth-field__label,
+:global(.register-card__form) .auth-field__label {
+  color: rgba(255, 255, 255, 0.85);
+}
+</style>

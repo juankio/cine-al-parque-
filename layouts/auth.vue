@@ -4,12 +4,8 @@
 
 <template>
   <UApp>
-    <div class="min-h-screen grid place-items-center bg-background text-foreground transition-colors">
-      <UContainer class="w-full max-w-md p-6">
-        <UCard class="p-6 shadow-lg">
-          <slot />
-        </UCard>
-      </UContainer>
+    <div class="min-h-screen bg-background text-foreground transition-colors">
+      <slot />
     </div>
   </UApp>
 </template>
