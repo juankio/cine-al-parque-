@@ -1,232 +1,217 @@
-<script setup>
+<script setup lang="ts">
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
+
+type AdminCard = {
+  title: string
+  description: string
+  icon: string
+  to: string
+  badge: {
+    text: string
+    className: string
+  }
+}
+
+type AdminSection = {
+  title: string
+  icon: string
+  cards: AdminCard[]
+}
+
+const sections: AdminSection[] = [
+  {
+    title: 'Operacion',
+    icon: 'i-heroicons-film',
+    cards: [
+      {
+        title: 'Cartelera',
+        description: 'Peliculas, sinopsis, duracion y edades.',
+        icon: 'i-heroicons-clapperboard',
+        to: '/admin/movies',
+        badge: {
+          text: 'En sala',
+          className:
+            'text-[11px] leading-none font-semibold uppercase tracking-wide text-primary bg-primary/10 px-2.5 py-1 rounded-md',
+        },
+      },
+      {
+        title: 'Funciones',
+        description: 'Horarios, mesas y reservas activas.',
+        icon: 'i-heroicons-clock',
+        to: '/admin/showtimes',
+        badge: {
+          text: 'En vivo',
+          className:
+            'text-[11px] leading-none font-semibold uppercase tracking-wide text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2.5 py-1 rounded-md',
+        },
+      },
+      {
+        title: 'KPI',
+        description: 'Ventas, ocupacion y conversion.',
+        icon: 'i-heroicons-chart-bar',
+        to: '/admin/kpi',
+        badge: {
+          text: 'Ver',
+          className:
+            'text-[11px] leading-none font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 bg-gray-200/60 dark:bg-gray-800/60 px-2.5 py-1 rounded-md',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Cocina & punto de venta',
+    icon: 'i-heroicons-fire',
+    cards: [
+      {
+        title: 'Ingredientes',
+        description: 'Stock, costo y alertas de insumos.',
+        icon: 'i-heroicons-archive-box',
+        to: '/admin/ingredients',
+        badge: {
+          text: 'Bodega',
+          className:
+            'text-[11px] leading-none font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2.5 py-1 rounded-md',
+        },
+      },
+      {
+        title: 'Recetas',
+        description: 'Costeo por porcion y merma.',
+        icon: 'i-heroicons-beaker',
+        to: '/admin/recipes',
+        badge: {
+          text: 'Cocina',
+          className:
+            'text-[11px] leading-none font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 px-2.5 py-1 rounded-md',
+        },
+      },
+      {
+        title: 'Menu',
+        description: 'Productos visibles para el cliente.',
+        icon: 'i-heroicons-sparkles',
+        to: '/admin/menu',
+        badge: {
+          text: 'Publico',
+          className:
+            'text-[11px] leading-none font-semibold uppercase tracking-wide text-primary bg-primary/10 px-2.5 py-1 rounded-md',
+        },
+      },
+    ],
+  },
+]
+
+type MotionPreset = {
+  initial: Record<string, any>
+  enter: Record<string, any>
+  hover?: Record<string, any>
+}
+
+const rollBottom = (delay = 0): MotionPreset => ({
+  initial: {
+    opacity: 0,
+    y: 34,
+    rotateX: -50,
+    scale: 0.96,
+    transformOrigin: 'bottom center',
+  },
+  enter: {
+    opacity: 1,
+    y: 0,
+    rotateX: 0,
+    scale: 1,
+    transition: {
+      delay,
+      type: 'spring',
+      stiffness: 210,
+      damping: 20,
+      mass: 0.9,
+    },
+  },
+})
+
+const withHoverLift = (preset: MotionPreset): MotionPreset => ({
+  ...preset,
+  hover: {
+    scale: 1.02,
+    rotateX: -1.4,
+    rotateY: 1.4,
+    transition: {
+      type: 'spring',
+      stiffness: 250,
+      damping: 18,
+    },
+  },
+})
+
+const headerMotion = rollBottom(0.05)
+const sectionHeaderMotion = (index: number) => rollBottom(0.08 + index * 0.04)
+const cardMotion = (index: number) => withHoverLift(rollBottom(0.12 + index * 0.05))
 </script>
 
 <template>
   <UContainer class="py-8 space-y-8">
-    <!-- HEADER -->
-    <header class="space-y-1">
+    <Motion tag="header" class="space-y-1" v-bind="headerMotion">
       <h1 class="text-2xl font-bold flex items-center gap-2">
         <UIcon name="i-heroicons-cog-8-tooth" class="text-primary text-2xl" />
         Panel administrativo
       </h1>
       <p class="text-sm text-muted">
-        Control de películas, funciones, inventario y ventas.
+        Control de peliculas, funciones, inventario y ventas.
       </p>
-    </header>
+    </Motion>
 
-    <!-- === OPERACIÓN === -->
-    <section class="space-y-4">
-      <div class="flex items-center gap-2">
-        <UIcon name="i-heroicons-film" class="text-primary text-xl" />
+    <section
+      v-for="(section, sectionIndex) in sections"
+      :key="section.title"
+      class="space-y-4"
+    >
+      <Motion
+        tag="div"
+        class="flex items-center gap-2"
+        v-bind="sectionHeaderMotion(sectionIndex)"
+      >
+        <UIcon :name="section.icon" class="text-primary text-xl" />
         <h2 class="text-sm font-semibold uppercase tracking-wide text-muted">
-          Operación
+          {{ section.title }}
         </h2>
-      </div>
+      </Motion>
 
       <div class="grid gap-4 md:grid-cols-3">
-        <!-- CARTELERA -->
-        <NuxtLink to="/admin/movies">
-          <UCard
-            class="group rounded-2xl border border-default/60 cursor-pointer transition hover:bg-primary/5 hover:ring-1 hover:ring-primary/30"
+        <NuxtLink
+          v-for="(card, cardIndex) in section.cards"
+          :key="card.title"
+          :to="card.to"
+          class="block"
+        >
+          <Motion
+            tag="div"
+            class="h-full"
+            v-bind="cardMotion(sectionIndex * 10 + cardIndex)"
           >
-            <div class="flex items-start justify-between">
-              <!-- left block -->
-              <div class="flex items-start gap-3">
-                <UIcon
-                  name="i-heroicons-clapperboard"
-                  class="text-primary text-2xl shrink-0"
-                />
-                <div class="space-y-1">
-                  <div class="font-semibold text-base leading-tight text-gray-800 dark:text-gray-100">
-                    Cartelera
+            <UCard
+              class="group rounded-2xl border border-default/60 cursor-pointer transition hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 h-full"
+            >
+              <div class="flex items-start justify-between h-full">
+                <div class="flex items-start gap-3">
+                  <UIcon
+                    :name="card.icon"
+                    class="text-primary text-2xl shrink-0"
+                  />
+                  <div class="space-y-1">
+                    <div class="font-semibold text-base leading-tight text-gray-800 dark:text-gray-100">
+                      {{ card.title }}
+                    </div>
+                    <p class="text-xs text-muted leading-snug">
+                      {{ card.description }}
+                    </p>
                   </div>
-                  <p class="text-xs text-muted leading-snug">
-                    Películas, sinopsis, duración, edades.
-                  </p>
                 </div>
+
+                <span :class="card.badge.className">
+                  {{ card.badge.text }}
+                </span>
               </div>
-
-              <!-- badge -->
-              <span
-                class="text-[11px] leading-none font-semibold uppercase tracking-wide text-primary bg-primary/10 px-2.5 py-1 rounded-md"
-              >
-                En sala
-              </span>
-            </div>
-          </UCard>
-        </NuxtLink>
-
-        <!-- FUNCIONES -->
-        <NuxtLink to="/admin/showtimes">
-          <UCard
-            class="group rounded-2xl border border-default/60 cursor-pointer transition hover:bg-primary/5 hover:ring-1 hover:ring-primary/30"
-          >
-            <div class="flex items-start justify-between">
-              <!-- left block -->
-              <div class="flex items-start gap-3">
-                <UIcon
-                  name="i-heroicons-clock"
-                  class="text-primary text-2xl shrink-0"
-                />
-                <div class="space-y-1">
-                  <div class="font-semibold text-base leading-tight text-gray-800 dark:text-gray-100">
-                    Funciones
-                  </div>
-                  <p class="text-xs text-muted leading-snug">
-                    Horarios, sillas, reservas activas.
-                  </p>
-                </div>
-              </div>
-
-              <!-- badge -->
-              <span
-                class="text-[11px] leading-none font-semibold uppercase tracking-wide text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2.5 py-1 rounded-md"
-              >
-                En vivo
-              </span>
-            </div>
-          </UCard>
-        </NuxtLink>
-
-        <!-- KPI -->
-        <NuxtLink to="/admin/kpi">
-          <UCard
-            class="group rounded-2xl border border-default/60 cursor-pointer transition hover:bg-primary/5 hover:ring-1 hover:ring-primary/30"
-          >
-            <div class="flex items-start justify-between">
-              <!-- left block -->
-              <div class="flex items-start gap-3">
-                <UIcon
-                  name="i-heroicons-chart-bar"
-                  class="text-primary text-2xl shrink-0"
-                />
-                <div class="space-y-1">
-                  <div class="font-semibold text-base leading-tight text-gray-800 dark:text-gray-100">
-                    KPI
-                  </div>
-                  <p class="text-xs text-muted leading-snug">
-                    Ventas, ocupación, conversión.
-                  </p>
-                </div>
-              </div>
-
-              <!-- badge -->
-              <span
-                class="text-[11px] leading-none font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 bg-gray-200/60 dark:bg-gray-800/60 px-2.5 py-1 rounded-md"
-              >
-                Ver
-              </span>
-            </div>
-          </UCard>
-        </NuxtLink>
-      </div>
-    </section>
-
-    <!-- === COCINA & POS === -->
-    <section class="space-y-4">
-      <div class="flex items-center gap-2">
-        <UIcon name="i-heroicons-fire" class="text-primary text-xl" />
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-muted">
-          Cocina & punto de venta
-        </h2>
-      </div>
-
-      <div class="grid gap-4 md:grid-cols-3">
-        <!-- INGREDIENTES -->
-        <NuxtLink to="/admin/ingredients">
-          <UCard
-            class="group rounded-2xl border border-default/60 cursor-pointer transition hover:bg-primary/5 hover:ring-1 hover:ring-primary/30"
-          >
-            <div class="flex items-start justify-between">
-              <!-- left block -->
-              <div class="flex items-start gap-3">
-                <UIcon
-                  name="i-heroicons-archive-box"
-                  class="text-primary text-2xl shrink-0"
-                />
-                <div class="space-y-1">
-                  <div class="font-semibold text-base leading-tight text-gray-800 dark:text-gray-100">
-                    Ingredientes
-                  </div>
-                  <p class="text-xs text-muted leading-snug">
-                    Stock, costo, insumos.
-                  </p>
-                </div>
-              </div>
-
-              <!-- badge -->
-              <span
-                class="text-[11px] leading-none font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2.5 py-1 rounded-md"
-              >
-                Bodega
-              </span>
-            </div>
-          </UCard>
-        </NuxtLink>
-
-        <!-- RECETAS -->
-        <NuxtLink to="/admin/recipes">
-          <UCard
-            class="group rounded-2xl border border-default/60 cursor-pointer transition hover:bg-primary/5 hover:ring-1 hover:ring-primary/30"
-          >
-            <div class="flex items-start justify-between">
-              <!-- left block -->
-              <div class="flex items-start gap-3">
-                <UIcon
-                  name="i-heroicons-beaker"
-                  class="text-primary text-2xl shrink-0"
-                />
-                <div class="space-y-1">
-                  <div class="font-semibold text-base leading-tight text-gray-800 dark:text-gray-100">
-                    Recetas
-                  </div>
-                  <p class="text-xs text-muted leading-snug">
-                    Costeo por porción.
-                  </p>
-                </div>
-              </div>
-
-              <!-- badge -->
-              <span
-                class="text-[11px] leading-none font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 px-2.5 py-1 rounded-md"
-              >
-                Cocina
-              </span>
-            </div>
-          </UCard>
-        </NuxtLink>
-
-        <!-- MENÚ -->
-        <NuxtLink to="/admin/menu">
-          <UCard
-            class="group rounded-2xl border border-default/60 cursor-pointer transition hover:bg-primary/5 hover:ring-1 hover:ring-primary/30"
-          >
-            <div class="flex items-start justify-between">
-              <!-- left block -->
-              <div class="flex items-start gap-3">
-                <UIcon
-                  name="i-heroicons-sparkles"
-                  class="text-primary text-2xl shrink-0"
-                />
-                <div class="space-y-1">
-                  <div class="font-semibold text-base leading-tight text-gray-800 dark:text-gray-100">
-                    Menú
-                  </div>
-                  <p class="text-xs text-muted leading-snug">
-                    Productos que ve el cliente.
-                  </p>
-                </div>
-              </div>
-
-              <!-- badge -->
-              <span
-                class="text-[11px] leading-none font-semibold uppercase tracking-wide text-primary bg-primary/10 px-2.5 py-1 rounded-md"
-              >
-                Público
-              </span>
-            </div>
-          </UCard>
+            </UCard>
+          </Motion>
         </NuxtLink>
       </div>
     </section>

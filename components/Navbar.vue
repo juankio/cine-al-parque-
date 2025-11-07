@@ -4,8 +4,9 @@ import { useAuth } from '~/composables/useAuth'
 
 const route = useRoute()
 const colorMode = useColorMode()
+const isDark = computed(() => colorMode.value === 'dark')
 const toggleTheme = () => {
-  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+  colorMode.preference = isDark.value ? 'light' : 'dark'
 }
 
 const { user, logout, fetchMe } = useAuth()
@@ -79,11 +80,17 @@ const navItems = computed<NavigationMenuItem[]>(() => {
     <UNavigationMenu :items="navItems" class="hidden lg:flex" />
 
     <template #right>
-      <UColorModeButton
+      <UButton
         variant="ghost"
         color="gray"
         aria-label="Cambiar tema"
-      />
+        @click="toggleTheme"
+      >
+        <UIcon
+          :name="isDark ? 'i-heroicons-moon-20-solid' : 'i-heroicons-sun-20-solid'"
+          class="text-lg"
+        />
+      </UButton>
 
       <template v-if="me">
         <NuxtLink
