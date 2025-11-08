@@ -1,7 +1,7 @@
 // middleware/auth.global.ts
 export default defineNuxtRouteMiddleware(async (to) => {
     // sólo protegemos estas rutas (ajusta si quieres más)
-    const protectedPrefixes = ['/me', '/admin']
+    const protectedPrefixes = ['/me', '/admin', '/reservations']
     if (!protectedPrefixes.some(p => to.path.startsWith(p))) return
 
     const { user } = useAuth()
