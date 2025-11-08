@@ -1,8 +1,35 @@
 <script setup lang="ts">
+import type { HistoryFilters } from '~/composables/useMe'
+
 definePageMeta({ auth: true, ssr: false })
 
 const { user, ensureSession } = useAuth()
 const { stats, history: meHistory, loading, error, fetchStats, fetchHistory } = useMe()
+
+type HistoryView = 'all' | 'upcoming' | 'past'
+const viewFilter = ref<HistoryView>('all')
+
+const filterConfig: Record<HistoryView, { label: string; description: string; params?: HistoryFilters }> = {
+  all: {
+    label: 'Todas',
+    description: 'Tus reservas confirmadas y pasadas.'
+  },
+  upcoming: {
+    label: 'Próximas',
+    description: 'Reservas pendientes o confirmadas para fechas futuras.',
+    params: { upcoming: 'true' }
+  },
+  past: {
+    label: 'Pasadas',
+    description: 'Historial completo de funciones anteriores.',
+    params: { upcoming: 'false' }
+  }
+}
+
+const loadHistory = async () => {
+  const cfg = filterConfig[viewFilter.value]
+  await fetchHistory(cfg.params || {})
+}
 
 onMounted(async () => {
   await ensureSession()
@@ -10,58 +37,83 @@ onMounted(async () => {
     const redirect = encodeURIComponent('/me')
     return navigateTo(`/login?redirect=${redirect}`)
   }
-  await Promise.all([fetchStats(), fetchHistory()])
+  await Promise.all([fetchStats(), loadHistory()])
 })
 
-const items   = computed(() => meHistory.value?.items ?? [])
-const visits  = computed(() => stats.value?.visits ?? 0)
-const spent   = computed(() => stats.value?.totalSpent ?? 0)
+watch(viewFilter, () => {
+  loadHistory()
+})
+
+const items = computed(() => meHistory.value?.items ?? [])
+const visits = computed(() => stats.value?.visits ?? 0)
+const spent = computed(() => stats.value?.totalSpent ?? 0)
 const favorite = computed(() => stats.value?.favorite ?? null)
+const lastVisit = computed(() => {
+  const value = stats.value?.lastVisit
+  return value ? new Date(value).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }) : null
+})
+const historyTitle = computed(() => {
+  switch (viewFilter.value) {
+    case 'upcoming':
+      return 'Tus próximas reservas'
+    case 'past':
+      return 'Reservas anteriores'
+    default:
+      return 'Historial de reservas'
+  }
+})
+const historyDescription = computed(() => filterConfig[viewFilter.value].description)
 
 const money = (n: number) => (n || 0).toLocaleString('es-CO')
-
-// badge por estado
-const statusMap: Record<string, { color: 'green'|'yellow'|'gray'|'red'; label: string }> = {
-  paid:     { color: 'green',  label: 'Pagado' },
-  pending:  { color: 'yellow', label: 'Pendiente' },
-  expired:  { color: 'gray',   label: 'Expirado' },
-  canceled: { color: 'red',    label: 'Cancelado' }
+const formatDate = (iso?: string) => {
+  if (!iso) return 'Fecha pendiente'
+  return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 }
-const statusConf = (s?: string) => statusMap[s || ''] || { color: 'gray', label: s || '—' }
+
+const overviewCards = computed(() => ([
+  {
+    label: 'Visitas totales',
+    value: visits.value,
+    hint: 'Reservas confirmadas',
+    icon: 'i-heroicons-ticket'
+  },
+  {
+    label: 'Total gastado',
+    value: `$ ${money(spent.value)}`,
+    hint: 'Incluye combos',
+    icon: 'i-heroicons-banknotes'
+  },
+  {
+    label: 'Última visita',
+    value: lastVisit.value || 'Aún no visitas',
+    hint: lastVisit.value ? 'Hora local' : 'Reserva tu primera función',
+    icon: 'i-heroicons-calendar-days'
+  }
+]))
 </script>
 
 <template>
-  <UContainer class="py-6 space-y-8">
-    <!-- Header -->
-    <PageHeader
-      title="Mi cuenta"
-      :subtitle="`Bienvenido, ${user?.name || user?.email} 👋`"
+  <UContainer class="py-8 space-y-8">
+    <Motion
+      tag="section"
+      :initial="{ opacity: 0, y: 20 }"
+      :enter="{ opacity: 1, y: 0, transition: { duration: 0.35 } }"
+    >
+      <AccountHero
+        :user-name="user?.name || user?.email || 'Usuario'"
+        :last-visit="lastVisit"
+        :favorite-title="favorite?.titulo || null"
+      />
+    </Motion>
+
+    <AccountStatsGrid :cards="overviewCards" />
+
+    <AccountFavoriteCard
+      v-if="favorite"
+      :title="favorite.titulo"
+      :poster="favorite.poster || ''"
     />
 
-    <!-- Stats -->
-    <div class="grid gap-4 md:grid-cols-3">
-      <UCard class="p-4 text-center">
-        <p class="text-sm text-muted">Visitas totales</p>
-        <p class="text-2xl font-bold">{{ visits }}</p>
-      </UCard>
-
-      <UCard class="p-4 text-center">
-        <p class="text-sm text-muted">Total gastado</p>
-        <p class="text-2xl font-bold">$ {{ money(spent) }}</p>
-      </UCard>
-
-      <UCard v-if="favorite" class="p-4 text-center">
-        <p class="text-sm text-muted">Peli favorita</p>
-        <p class="text-lg font-semibold">{{ favorite.titulo }}</p>
-        <img
-          :src="favorite.poster || '/placeholder.png'"
-          alt=""
-          class="mx-auto mt-2 h-24 w-auto rounded-lg object-cover border border-default/50"
-        />
-      </UCard>
-    </div>
-
-    <!-- Loading / Error -->
     <LoadingSkeleton v-if="loading" :rows="3" />
     <UAlert
       v-else-if="error"
@@ -72,53 +124,22 @@ const statusConf = (s?: string) => statusMap[s || ''] || { color: 'gray', label:
       title="No se pudieron cargar tus datos"
     />
 
-    <!-- Historial -->
-    <template v-else>
-      <h3 class="text-xl font-semibold">Historial de reservas</h3>
+    <section v-else class="space-y-5">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h3 class="text-2xl font-semibold">{{ historyTitle }}</h3>
+          <p class="text-sm text-muted">{{ historyDescription }}</p>
+        </div>
+        <AccountHistoryFilters v-model="viewFilter" :config="filterConfig" />
+      </div>
 
       <EmptyState
         v-if="items.length === 0"
-        description="No tienes reservas todavía."
+        title="Sin reservas todavía"
+        description="Cuando confirmes una función la verás registrada en este espacio."
       />
 
-      <div v-else class="grid gap-4">
-        <ItemCard v-for="r in items" :key="r.id">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <h4 class="font-semibold truncate">
-                🎬 {{ r.movie?.titulo || 'Sin título' }}
-              </h4>
-              <p class="text-sm text-muted mt-1">
-                Sala {{ r.showtime?.sala || '—' }} —
-                {{ new Date(r.showtime?.fechaHora || Date.now()).toLocaleString('es-CO') }}
-              </p>
-              <p class="text-sm text-muted">Asientos: {{ (r.seats || []).join(', ') || '—' }}</p>
-              <p class="text-sm text-muted">Total: $ {{ money(r.total || 0) }}</p>
-
-              <div v-if="r.cart?.length" class="mt-2 text-sm text-muted">
-                <p>🍔 Comida:</p>
-                <ul class="list-disc ml-5">
-                  <li v-for="(c, i) in r.cart" :key="i">
-                    {{ c.qty }} × {{ c.nombre }} — $ {{ money(c.unitPrice * c.qty) }}
-                  </li>
-                </ul>
-              </div>
-
-              <p v-if="r.status === 'pending' && r.expiresAt" class="text-xs text-muted mt-2">
-                Expira: {{ new Date(r.expiresAt).toLocaleTimeString('es-CO') }}
-              </p>
-            </div>
-
-            <UBadge
-              :color="statusConf(r.status).color"
-              variant="subtle"
-              class="shrink-0"
-            >
-              {{ statusConf(r.status).label }}
-            </UBadge>
-          </div>
-        </ItemCard>
-      </div>
-    </template>
+      <AccountHistoryList v-else :items="items" />
+    </section>
   </UContainer>
 </template>
