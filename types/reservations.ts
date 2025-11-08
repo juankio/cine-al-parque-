@@ -11,11 +11,28 @@ export type ReservationSummary = {
   createdAt: string
   expiresAt: string | null
   canConfirm: boolean
+  checkedInAt: string | null
+  qrToken: string | null
   showtime: {
     id: string
     fechaHora: string | null
     sala?: string
     movieTitle?: string
     moviePoster?: string
+  } | null
+}
+
+export type ReservationScanResult = {
+  id: string
+  status: 'pending' | 'paid' | 'canceled' | 'expired'
+  total: number
+  seats: string[]
+  checkedInAt: string
+  alreadyChecked: boolean
+  canAdmit: boolean
+  showtime: {
+    fechaHora: string | null
+    sala?: string
+    movieTitle?: string
   } | null
 }

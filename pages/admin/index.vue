@@ -26,7 +26,7 @@ const sections: AdminSection[] = [
       {
         title: 'Cartelera',
         description: 'Peliculas, sinopsis, duracion y edades.',
-        icon: 'i-heroicons-clapperboard',
+        icon: 'i-heroicons-video-camera',
         to: '/admin/movies',
         badge: {
           text: 'En sala',
@@ -43,6 +43,17 @@ const sections: AdminSection[] = [
           text: 'En vivo',
           className:
             'text-[11px] leading-none font-semibold uppercase tracking-wide text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2.5 py-1 rounded-md',
+        },
+      },
+      {
+        title: 'Escáner QR',
+        description: 'Validación y check-in de reservas.',
+        icon: 'i-heroicons-qr-code',
+        to: '/admin/reservations/scan',
+        badge: {
+          text: 'Nuevo',
+          className:
+            'text-[11px] leading-none font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1 rounded-md',
         },
       },
       {

@@ -3,6 +3,7 @@ import { readSession } from '@/server/utils/session'
 import { Reservation } from '@/server/models/Reservation'
 import { Showtime } from '@/server/models/Showtime'
 import { Movie } from '@/server/models/Movie'
+import { encodeReservationToken } from '@/server/utils/reservationToken'
 
 type ReservationResponse = {
   id: string
@@ -20,6 +21,8 @@ type ReservationResponse = {
   createdAt: string
   expiresAt: string | null
   canConfirm: boolean
+  checkedInAt: string | null
+  qrToken: string | null
   showtime: {
     id: string
     fechaHora: string | null
@@ -37,6 +40,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const query = getQuery(event)
+  const { authSecret } = useRuntimeConfig()
+  const qrSecret = authSecret || 'nuxt-secret'
   const limitParam = Number(query.limit || 50)
   const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), 100) : 50
 
@@ -91,6 +96,22 @@ export default defineEventHandler(async (event) => {
     const canConfirm =
       res.status === 'pending' && (!res.expiresAt || res.expiresAt.getTime() > now)
 
+    let qrToken: string | null = null
+    if (res.status === 'paid') {
+      try {
+        qrToken = encodeReservationToken(
+          {
+            rid: res._id.toString(),
+            sid: res.showtimeId ? res.showtimeId.toString() : null,
+            ts: Date.now()
+          },
+          qrSecret
+        )
+      } catch {
+        qrToken = null
+      }
+    }
+
     return {
       id: res._id.toString(),
       status: res.status,
@@ -102,6 +123,8 @@ export default defineEventHandler(async (event) => {
       createdAt: res.createdAt ? res.createdAt.toISOString() : new Date().toISOString(),
       expiresAt,
       canConfirm,
+      checkedInAt: res.checkedInAt ? res.checkedInAt.toISOString() : null,
+      qrToken,
       showtime: st
         ? {
             id: st._id.toString(),

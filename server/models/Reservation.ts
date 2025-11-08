@@ -15,7 +15,9 @@ const ReservationSchema = new Schema({
     total: { type: Number, default: 0 },
     status: { type: String, enum: ['pending', 'paid', 'canceled', 'expired'], default: 'pending' },
     expiresAt: { type: Date, required: false },      // hold TTL
-    cart: { type: [CartItemSchema], default: [] }
+    cart: { type: [CartItemSchema], default: [] },
+    checkedInAt: { type: Date, required: false },
+    checkedInBy: { type: Types.ObjectId, ref: 'User', required: false }
 }, { timestamps: true })
 
 ReservationSchema.index({ userId: 1, createdAt: -1 })
