@@ -17,7 +17,7 @@ const money = (value?: number) => (Number(value || 0)).toLocaleString('es-CO')
 
 <template>
   <UAlert
-    :color="hold.status === 'paid' ? 'primary' : 'green'"
+    :color="hold.status === 'paid' ? 'primary' : 'success'"
     variant="soft"
     icon="i-heroicons-ticket"
     :title="hold.status === 'paid' ? 'Reserva confirmada' : '¡Listo! Bloqueamos tus asientos'"

@@ -15,11 +15,11 @@ const formatDate = (iso?: string) => {
   return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-const statusMap: Record<string, { color: 'green'|'yellow'|'gray'|'red'; label: string }> = {
-  paid:     { color: 'green',  label: 'Pagado' },
-  pending:  { color: 'yellow', label: 'Pendiente' },
-  expired:  { color: 'gray',   label: 'Expirado' },
-  canceled: { color: 'red',    label: 'Cancelado' }
+const statusMap: Record<string, { color: 'neutral' | 'success' | 'warning' | 'error'; label: string }> = {
+  paid:     { color: 'success',  label: 'Pagado' },
+  pending:  { color: 'warning', label: 'Pendiente' },
+  expired:  { color: 'error',   label: 'Expirado' },
+  canceled: { color: 'neutral',    label: 'Cancelado' }
 }
 const statusIcons: Record<string, string> = {
   paid: 'i-heroicons-check-circle',

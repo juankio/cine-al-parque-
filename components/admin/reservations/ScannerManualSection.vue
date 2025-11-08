@@ -52,7 +52,7 @@ const submit = () => emit('submit')
     </form>
 
     <div v-if="lastResult" class="rounded-2xl border border-dashed p-4 space-y-2">
-      <UBadge :color="lastResult.ok ? 'green' : 'red'" variant="soft">
+      <UBadge :color="lastResult.ok ? 'success' : 'error'" variant="soft">
         {{ lastResult.ok ? 'Admitido' : 'Observación' }}
       </UBadge>
       <p class="text-base font-semibold">

@@ -99,7 +99,7 @@ export const useShowtimePage = () => {
     }
 
     const handleFocusRefresh = () => {
-        fetchLayout({ silent: true }).catch(() => {})
+        fetchLayout({ silent: true }).catch(() => { })
     }
 
     onMounted(() => {
@@ -108,7 +108,7 @@ export const useShowtimePage = () => {
             window.addEventListener('focus', handleFocusRefresh)
             window.addEventListener('visibilitychange', handleFocusRefresh)
         }
-        fetchCombos({ force: true }).catch(() => {})
+        fetchCombos({ force: true }).catch(() => { })
     })
     onBeforeUnmount(() => {
         if (process.client) {
@@ -297,7 +297,7 @@ export const useShowtimePage = () => {
             toast.add({
                 title: '¡Listo! Bloqueamos tus asientos',
                 description: 'Confirma el pago antes de que expire el hold.',
-                color: 'green',
+                color: 'success',
                 icon: 'i-heroicons-ticket'
             })
             reserveMode.value = false
@@ -339,7 +339,7 @@ export const useShowtimePage = () => {
             toast.add({
                 title: 'Pago confirmado',
                 description: 'Tu reserva quedó marcada como pagada.',
-                color: 'green',
+                color: 'success',
                 icon: 'i-heroicons-credit-card'
             })
             fetchLayout()

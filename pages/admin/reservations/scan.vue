@@ -88,7 +88,7 @@ const verifyToken = async (token: string) => {
     toast.add({
       title: 'Reserva validada',
       description: `Asientos ${response.reservation.seats.join(', ')}`,
-      color: 'green',
+      color: 'success',
       icon: 'i-heroicons-check-badge'
     })
   } catch (err: any) {
@@ -132,7 +132,7 @@ onBeforeUnmount(() => stopScanner())
               <p class="text-xs uppercase tracking-[0.3em] text-muted">Scanner</p>
               <h2 class="text-xl font-semibold">Lectura en vivo</h2>
             </div>
-            <UBadge :color="scanning ? 'green' : 'neutral'" variant="soft">{{ scanning ? 'Listo' : 'Detenido' }}</UBadge>
+            <UBadge :color="scanning ? 'success' : 'neutral'" variant="soft">{{ scanning ? 'Listo' : 'Detenido' }}</UBadge>
           </div>
         </template>
         <div class="space-y-4">

@@ -18,12 +18,12 @@ const emit = defineEmits<{
 
 const statusMeta: Record<
   ReservationSummary['status'],
-  { label: string; color: 'gray' | 'green' | 'amber' | 'rose' }
+  { label: string; color: 'neutral' | 'success' | 'warning' | 'error' }
 > = {
-  pending: { label: 'Pendiente', color: 'amber' },
-  paid: { label: 'Pagada', color: 'green' },
-  expired: { label: 'Expirada', color: 'rose' },
-  canceled: { label: 'Cancelada', color: 'gray' }
+  pending: { label: 'Pendiente', color: 'warning' },
+  paid: { label: 'Pagada', color: 'success' },
+  expired: { label: 'Expirada', color: 'error' },
+  canceled: { label: 'Cancelada', color: 'neutral' }
 }
 
 const formatMoney = (value?: number) => `$ ${Number(value || 0).toLocaleString('es-CO')}`

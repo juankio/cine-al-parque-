@@ -94,7 +94,7 @@ const onSubmit = async (payload: FormSubmitEvent<Schema>) => {
     toast.add({
       title: 'Cuenta creada',
       description: 'Te damos la bienvenida 👋',
-      color: 'green',
+      color: 'success',
       icon: 'i-heroicons-user-plus',
     })
     router.push('/')

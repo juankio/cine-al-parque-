@@ -22,7 +22,7 @@ const fmtMoney = (n?: number) =>
         </UBadge>
         <UBadge variant="soft" color="gray">Sala: <b class="ml-1">{{ showtime.sala }}</b></UBadge>
         <UBadge variant="soft" color="gray">Precio: <b class="ml-1">$ {{ fmtMoney(showtime.price) }}</b></UBadge>
-        <UBadge :color="showtime.active ? 'green' : 'gray'" variant="soft">
+        <UBadge :color="showtime.active ? 'success' : 'neutral'" variant="soft">
           {{ showtime.active ? 'Activo' : 'Inactivo' }}
         </UBadge>
         <UBadge variant="soft" color="primary">Mesas: {{ totalMesas }}</UBadge>

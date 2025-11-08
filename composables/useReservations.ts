@@ -54,7 +54,7 @@ export const useReservations = () => {
       toast.add({
         title: 'Reserva confirmada',
         description: 'Marcamos tu reserva como pagada.',
-        color: 'green',
+        color: 'success',
         icon: 'i-heroicons-check-circle'
       })
 
