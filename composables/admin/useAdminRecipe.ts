@@ -1,7 +1,7 @@
 // composables/useAdminRecipes.ts
 import { ref, reactive, computed } from 'vue'
 
-type Row = { ingredientId: string; amount: string | number }
+type Row = { ingredientId: string; amount: string | number; ingredientName?: string; ingredientUnit?: string }
 type IngOpt = { value: string; label: string; unit?: string }
 
 function toNumberOrNull(v: unknown) {
@@ -101,6 +101,8 @@ export function useAdminRecipes() {
             ? rec.items.map((r: any) => ({
                 ingredientId: r.ingredientId || r.ingredient?._id || '',
                 amount: String(r.amount ?? r.qtyBase ?? ''),
+                ingredientName: r.ingredient?.nombre,
+                ingredientUnit: r.ingredient?.unidad,
             }))
             : []
         Object.assign(form, {

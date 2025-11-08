@@ -40,7 +40,10 @@
         <div
           v-for="(row, idx) in model.items"
           :key="idx"
-          class="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3"
+          :class="[
+            'grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-3 rounded-2xl border p-3',
+            isRowAvailable(row) ? 'border-transparent' : 'border-red-200 bg-red-50'
+          ]"
         >
           <!-- Trigger + Popover con GRID -->
           <UPopover :open="openIdx === idx" @update:open="onToggleOpen(idx, $event)">
@@ -98,16 +101,24 @@
           </div>
 
           <!-- Quitar -->
-          <div class="pt-5">
-            <UButton
-              icon="i-heroicons-x-mark"
-              color="neutral"
-              variant="ghost"
-              @click="removeRow(idx)"
-              title="Quitar"
-            />
-          </div>
+        <div class="pt-5">
+          <UButton
+            icon="i-heroicons-x-mark"
+            color="neutral"
+            variant="ghost"
+            @click="removeRow(idx)"
+            title="Quitar"
+          />
         </div>
+
+        <p
+          v-if="!isRowAvailable(row)"
+          class="col-span-3 text-xs text-red-600 flex items-center gap-1"
+        >
+          <UIcon name="i-heroicons-exclamation-triangle" />
+          Ingrediente inactivo o sin stock. Se desactiva la receta hasta actualizarlo.
+        </p>
+      </div>
       </div>
 
       <p class="text-xs text-muted mt-2">
@@ -124,7 +135,7 @@
 </template>
 
 <script setup lang="ts">
-type Row = { ingredientId: string; amount: string | number }
+type Row = { ingredientId: string; amount: string | number; ingredientName?: string; ingredientUnit?: string }
 type IngredientOption = { value: string; label: string; unit?: string }
 
 const props = defineProps<{
@@ -154,6 +165,11 @@ const search = ref("")
 const labelById = computed<Record<string, string>>(() => {
   const m: Record<string, string> = {}
   for (const o of (props.ingredientOptions || [])) m[o.value] = o.label
+  for (const row of model.value.items || []) {
+    if (row.ingredientId && row.ingredientName) {
+      m[row.ingredientId] = `${row.ingredientName}${row.ingredientUnit ? ` (${row.ingredientUnit})` : ''}`
+    }
+  }
   return m
 })
 const selectedLabel = (id?: string) => (id && labelById.value[id]) || ""
@@ -162,8 +178,10 @@ const selectedLabel = (id?: string) => (id && labelById.value[id]) || ""
 const filteredOptions = computed(() => {
   const term = search.value.toLowerCase().trim()
   const src = props.ingredientOptions || []
-  if (!term) return src
-  return src.filter((o) => o.label.toLowerCase().includes(term))
+  const existing = new Set((model.value.items || []).map((row) => row.ingredientId))
+  const filtered = src.filter((o) => !existing.has(o.value))
+  if (!term) return filtered
+  return filtered.filter((o) => o.label.toLowerCase().includes(term))
 })
 
 // Abrir/cerrar popover por fila
@@ -173,8 +191,9 @@ function onToggleOpen(idx: number, val: boolean) {
 
 // acciones
 function addRow() {
-  model.value.items = [...(model.value.items || []), { ingredientId: "", amount: "" }]
-  nextTick(() => { openIdx.value = model.value.items.length - 1 })
+  const nextItems = [...(model.value.items || []), { ingredientId: "", amount: "" }]
+  model.value.items = nextItems
+  nextTick(() => { openIdx.value = nextItems.length - 1 })
 }
 
 function removeRow(idx: number) {
@@ -186,8 +205,20 @@ function removeRow(idx: number) {
 
 function pick(idx: number, id: string) {
   const copy = [...(model.value.items || [])]
-  copy[idx] = { ...copy[idx], ingredientId: id }
+  const option = (props.ingredientOptions || []).find(o => o.value === id)
+  copy[idx] = {
+    ...copy[idx],
+    ingredientId: id,
+    ingredientName: option?.label,
+    ingredientUnit: option?.unit,
+  }
   model.value.items = copy
   openIdx.value = null
+}
+
+const isRowAvailable = (row: Row) => {
+  if (!row.ingredientId) return false
+  const opt = (props.ingredientOptions || []).find(o => o.value === row.ingredientId)
+  return !!opt
 }
 </script>

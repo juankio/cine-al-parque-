@@ -1,6 +1,7 @@
 import { connectDB } from '@/server/utils/mongoose'
 import { requireAdmin } from '@/server/utils/admin'
 import { Recipe } from '@/server/models/Recipe'
+import { Ingredient } from '@/server/models/Ingredient'
 
 export default defineEventHandler(async (event) => {
     await connectDB(); await requireAdmin(event)
@@ -28,5 +29,33 @@ export default defineEventHandler(async (event) => {
         Recipe.countDocuments(filter)
     ])
 
-    return { items, page, pageSize, total }
+    const ingredientIds = Array.from(new Set(items.flatMap(r => (r.items || []).map((it: any) => String(it.ingredientId)))))
+    const ingredients = await Ingredient.find({ _id: { $in: ingredientIds } }).select('stockBase activo nombre unidad').lean()
+    const ingMap = new Map(ingredients.map((ing: any) => [String(ing._id), ing]))
+
+    const hydrated = items.map((recipe: any) => {
+        let available = true
+        for (const item of recipe.items || []) {
+            const ing = ingMap.get(String(item.ingredientId))
+            const qty = typeof item.qtyBase === 'number' ? item.qtyBase : Number(item.qtyBase) || 0
+            if (ing) {
+                item.ingredient = {
+                    _id: ing._id,
+                    nombre: ing.nombre,
+                    unidad: ing.unidad,
+                    activo: ing.activo,
+                    stockBase: ing.stockBase,
+                }
+            }
+            if (!ing || !ing.activo || (qty > 0 && Number(ing.stockBase ?? 0) < qty)) {
+                available = false
+                break
+            }
+        }
+        recipe.available = available
+        if (!available) recipe.activo = false
+        return recipe
+    })
+
+    return { items: hydrated, page, pageSize, total }
 })
