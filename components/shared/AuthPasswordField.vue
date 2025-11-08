@@ -24,7 +24,7 @@ defineProps<{
       color="gray"
       variant="link"
       size="xs"
-      class="self-end -mt-1"
+      class="auth-field__toggle"
       @click.prevent="show = !show"
     >
       {{ show ? 'Ocultar' : 'Ver' }} contraseña
@@ -45,6 +45,15 @@ defineProps<{
 }
 :global(.login-card__form) .auth-field__label,
 :global(.register-card__form) .auth-field__label {
+  color: rgba(255, 255, 255, 0.85);
+}
+.auth-field__toggle {
+  align-self: flex-end;
+  margin-top: -0.25rem;
+  color: rgba(15, 23, 42, 0.7);
+}
+:global(.login-card__form) .auth-field__toggle,
+:global(.register-card__form) .auth-field__toggle {
   color: rgba(255, 255, 255, 0.85);
 }
 </style>

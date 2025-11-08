@@ -1,19 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from '#imports'
+import { reactive, computed, ref } from 'vue'
+import { useRouter, useToast } from '#imports'
 import { useAuth } from '~/composables/useAuth'
-import { validateRegister } from '~/utils/validators'
+import * as z from 'zod'
+import type { FormSubmitEvent, AuthFormField } from '@nuxt/ui'
 
 definePageMeta({ layout: 'auth' })
 
 const router = useRouter()
+const toast = useToast()
 const { register, loading, error } = useAuth()
-
-const name = ref('')
-const email = ref('')
-const password = ref('')
-const confirm = ref('')
-const errMsg = computed(() => (typeof error.value === 'string' ? error.value : ''))
+const localError = ref('')
+const errMsg = computed(() => localError.value || (typeof error.value === 'string' ? error.value : ''))
 
 const badgeHighlights = [
   { label: 'Centros activos', value: '12' },
@@ -27,282 +25,248 @@ const onboardingSteps = [
   'Comparte tu enlace público para recibir reservas.',
 ]
 
-const onSubmit = async () => {
-  const v = validateRegister(name.value, email.value, password.value, confirm.value)
-  if (v) return alert(v)
+const labelUi = { label: 'text-white' }
+const fields: AuthFormField[] = [
+  {
+    name: 'name',
+    type: 'text',
+    label: 'Nombre',
+    placeholder: 'Nombre y apellido',
+    required: true,
+    defaultValue: '',
+    ui: labelUi,
+  },
+  {
+    name: 'email',
+    type: 'email',
+    label: 'Correo',
+    placeholder: 'correo@cine.com',
+    required: true,
+    defaultValue: '',
+    ui: labelUi,
+  },
+  {
+    name: 'password',
+    type: 'password',
+    label: 'Contraseña',
+    placeholder: '••••••••',
+    required: true,
+    defaultValue: '',
+    ui: labelUi,
+  },
+  {
+    name: 'confirm',
+    type: 'password',
+    label: 'Confirmar contraseña',
+    placeholder: '••••••••',
+    required: true,
+    defaultValue: '',
+    ui: labelUi,
+  },
+]
+
+const schema = z
+  .object({
+    name: z.string().min(2, 'Ingresa tu nombre'),
+    email: z.string().email('Correo inválido'),
+    password: z.string().min(6, 'Contraseña demasiado corta'),
+    confirm: z.string().min(6, 'Confirma tu contraseña'),
+  })
+  .refine((data) => data.password === data.confirm, {
+    path: ['confirm'],
+    message: 'Las contraseñas no coinciden',
+  })
+
+type Schema = z.output<typeof schema>
+
+const formState = reactive<Schema>({
+  name: '',
+  email: '',
+  password: '',
+  confirm: '',
+})
+
+const onSubmit = async (payload: FormSubmitEvent<Schema>) => {
+  const { name, email, password } = payload.data
+  localError.value = ''
   try {
-    await register({ name: name.value, email: email.value, password: password.value })
+    await register({ name, email, password })
+    toast.add({
+      title: 'Cuenta creada',
+      description: 'Te damos la bienvenida 👋',
+      color: 'green',
+      icon: 'i-heroicons-user-plus',
+    })
     router.push('/')
-  } catch {}
+  } catch (e: any) {
+    const message = e?.data?.message || e?.message || 'No pudimos crear tu cuenta'
+    localError.value = message
+    toast.add({
+      title: 'Registro fallido',
+      description: message,
+      color: 'red',
+      icon: 'i-heroicons-exclamation-triangle',
+    })
+  } finally {
+    error.value = null
+  }
 }
 </script>
 
 <template>
-  <div class="auth-shell register-shell">
-    <div class="auth-glow" />
-
+  <div class="min-h-screen bg-gradient-to-b from-rose-950 via-rose-900 to-rose-950 px-4 py-10 sm:px-6 lg:px-8 flex items-center justify-center">
     <Motion
       tag="div"
-      class="register-card"
-      :initial="{ opacity: 0, y: 30 }"
+      :initial="{ opacity: 0, y: 32 }"
       :enter="{ opacity: 1, y: 0, transition: { duration: 0.45, ease: 'easeOut' } }"
+      :hover="{ scale: 1.005 }"
+      class="w-full max-w-5xl"
     >
-      <div class="register-card__inner">
-        <section class="register-card__form">
+      <UCard class="relative overflow-hidden border border-white/10 bg-black/30 shadow-[0_40px_120px_rgba(0,0,0,0.55)] rounded-[36px]">
+        <div class="grid grid-cols-1 lg:grid-cols-2">
           <Motion
-            tag="div"
-            :initial="{ opacity: 0, x: -25 }"
-            :enter="{ opacity: 1, x: 0, transition: { delay: 0.1, type: 'spring', stiffness: 230, damping: 20 } }"
-            class="space-y-6"
+            tag="section"
+            :initial="{ opacity: 0, x: -30 }"
+            :enter="{ opacity: 1, x: 0, transition: { delay: 0.1, type: 'spring', stiffness: 200, damping: 20 } }"
+            class="backdrop-blur-xl bg-white/5 border border-white/10 text-white p-8 sm:p-10 flex flex-col gap-6 rounded-[28px] lg:rounded-[32px] lg:rounded-r-[120px] shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
           >
-            <div class="text-center space-y-1">
-              <h2 class="text-2xl font-semibold text-foreground">Crear cuenta</h2>
-              <p class="text-sm text-muted">Completa tus datos para comenzar a operar</p>
-            </div>
-
-            <UForm @submit.prevent="onSubmit" class="space-y-4">
-              <AuthTextField
-                v-model="name"
-                label="Nombre"
-                name="name"
-                icon="i-heroicons-user"
-                autocomplete="name"
-                required
-              />
-              <AuthTextField
-                v-model="email"
-                label="Correo"
-                name="email"
-                type="email"
-                icon="i-heroicons-envelope"
-                autocomplete="email"
-                required
-              />
-              <AuthPasswordField
-                v-model="password"
-                label="Contraseña"
-                name="password"
-                autocomplete="new-password"
-                required
-              />
-              <AuthPasswordField
-                v-model="confirm"
-                label="Confirmar contraseña"
-                name="confirm"
-                autocomplete="new-password"
-                required
-              />
-
-              <UButton type="submit" color="primary" block size="lg" :loading="loading">
-                Registrarme
-              </UButton>
-
-              <UAlert
-                v-if="errMsg"
-                color="red"
-                variant="soft"
-                icon="i-heroicons-exclamation-triangle"
-                :description="errMsg"
-              />
-            </UForm>
-
-            <p class="text-center text-sm text-muted">
-              ¿Ya tienes cuenta?
-              <NuxtLink to="/login" class="text-primary hover:underline">Inicia sesión</NuxtLink>
-            </p>
-          </Motion>
-        </section>
-
-        <div class="register-card__curve" aria-hidden="true">
-          <svg
-            viewBox="0 0 260 800"
-            xmlns="http://www.w3.org/2000/svg"
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <linearGradient id="registerCurve" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#220304" />
-                <stop offset="55%" stop-color="#ffced6" />
-                <stop offset="100%" stop-color="#fff9f6" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M0,0 C160,160 260,300 240,400 C220,500 120,640 0,800 L260,800 L260,0 Z"
-              fill="url(#registerCurve)"
-            />
-          </svg>
-        </div>
-
-        <section class="register-card__showcase">
-          <Motion
-            tag="div"
-            :initial="{ opacity: 0, x: 25 }"
-            :enter="{ opacity: 1, x: 0, transition: { delay: 0.15, duration: 0.45 } }"
-            class="space-y-6"
-          >
-            <UBadge color="white" variant="soft" class="uppercase tracking-[0.25em] text-xs text-muted">
-              Equipo nuevo
-            </UBadge>
+            <Motion
+              tag="div"
+              class="text-center space-y-1"
+              :initial="{ opacity: 0, y: -10 }"
+              :enter="{ opacity: 1, y: 0, transition: { delay: 0.1, duration: 0.4, ease: 'easeOut' } }"
+            >
+              <div class="inline-flex items-center gap-1 rounded-full bg-white/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-white/70">
+                registro
+              </div>
+              <h2 class="text-2xl font-semibold">Crea tu cuenta</h2>
+              <p class="text-sm text-white/70">Completa tus datos para comenzar a operar</p>
+            </Motion>
 
             <div class="space-y-4">
-              <h1 class="text-3xl sm:text-4xl font-bold leading-tight">
-                Activa tu centro de cine al aire libre en minutos.
-              </h1>
-              <p class="text-base text-muted">
-                Organiza funciones, combos y reservas con dashboards intuitivos. Cada usuario comparte información sincronizada.
-              </p>
+              <Motion
+                tag="div"
+                :initial="{ opacity: 0, y: 20 }"
+                :enter="{ opacity: 1, y: 0, transition: { delay: 0.2, duration: 0.45, ease: 'easeOut' } }"
+              >
+                <UAuthForm
+                  :schema="schema"
+                  :fields="fields"
+                  :state="formState"
+                  :loading="loading"
+                  :submit-button="{ label: 'Registrarme', color: 'primary', class: 'rounded-full' }"
+                  @submit="onSubmit"
+                >
+                  <template #name-label>
+                    <span class="text-white">Nombre</span>
+                  </template>
+                  <template #email-label>
+                    <span class="text-white">Correo</span>
+                  </template>
+                <template #password-label>
+                  <span class="text-white">Contraseña</span>
+                </template>
+                <template #confirm-label>
+                  <span class="text-white">Confirmar contraseña</span>
+                </template>
+                <template #validation>
+                  <p v-if="errMsg" class="text-sm text-red-300 text-center">
+                    {{ errMsg }}
+                  </p>
+                </template>
+              </UAuthForm>
+              </Motion>
+
+              <Motion
+                tag="div"
+                :initial="{ opacity: 0, y: 24 }"
+                :enter="{ opacity: 1, y: 0, transition: { delay: 0.3, duration: 0.45, ease: 'easeOut' } }"
+              >
+                <div class="text-center text-sm text-white/80">
+                  ¿Ya tienes cuenta?
+                  <NuxtLink to="/login" class="text-white font-semibold hover:text-primary transition-colors">Inicia sesión</NuxtLink>
+                </div>
+              </Motion>
+
+              <Motion
+                v-if="errMsg"
+                tag="div"
+                :initial="{ opacity: 0, y: 14 }"
+                :enter="{ opacity: 1, y: 0, transition: { delay: 0.34, duration: 0.35, ease: 'easeOut' } }"
+              >
+                <UAlert
+                  color="red"
+                  variant="soft"
+                  icon="i-heroicons-exclamation-triangle"
+                  :description="errMsg"
+                />
+              </Motion>
             </div>
+          </Motion>
 
-            <ul class="space-y-2 text-sm text-muted">
-              <li
-                v-for="step in onboardingSteps"
-                :key="step"
-                class="flex items-start gap-3"
+          <Motion
+            tag="section"
+            :initial="{ opacity: 0, x: 30 }"
+            :enter="{ opacity: 1, x: 0, transition: { delay: 0.15, type: 'spring', stiffness: 200, damping: 20 } }"
+            class="relative bg-white text-slate-900 p-8 sm:p-10 rounded-[28px] lg:rounded-[32px] lg:rounded-l-[120px] overflow-hidden shadow-inner"
+          >
+            <div class="absolute inset-0 bg-gradient-to-br from-white via-rose-50 to-rose-100 pointer-events-none" />
+            <div class="absolute -left-24 top-20 h-64 w-64 rounded-full bg-rose-100 opacity-50 blur-3xl" />
+            <div class="absolute -left-16 bottom-0 h-56 w-56 rounded-full bg-rose-200 opacity-30 blur-2xl" />
+            <div class="relative space-y-6">
+              <Motion
+                tag="div"
+                :initial="{ opacity: 0, y: -14 }"
+                :enter="{ opacity: 1, y: 0, transition: { delay: 0.12, duration: 0.4, ease: 'easeOut' } }"
               >
-                <span class="mt-1 h-2 w-2 rounded-full bg-primary" />
-                <span>{{ step }}</span>
-              </li>
-            </ul>
+                <UBadge variant="soft" color="primary" class="uppercase tracking-[0.3em] text-xs text-muted">
+                  Equipo nuevo
+                </UBadge>
+              </Motion>
+              <Motion
+                tag="div"
+                class="space-y-4"
+                :initial="{ opacity: 0, y: 18 }"
+                :enter="{ opacity: 1, y: 0, transition: { delay: 0.2, duration: 0.45, ease: 'easeOut' } }"
+              >
+                <h1 class="text-3xl sm:text-4xl font-bold leading-tight">
+                  Activa tu centro de cine al aire libre en minutos.
+                </h1>
+                <p class="text-sm text-muted">
+                  Organiza funciones, combos y reservas con dashboards intuitivos. Cada usuario comparte información sincronizada.
+                </p>
+              </Motion>
+              <ul class="space-y-2 text-sm text-muted">
+                <Motion
+                  v-for="(step, index) in onboardingSteps"
+                  :key="step"
+                  tag="li"
+                  :initial="{ opacity: 0, x: 16 }"
+                  :enter="{ opacity: 1, x: 0, transition: { delay: 0.28 + index * 0.08, duration: 0.4, ease: 'easeOut' } }"
+                  class="flex items-start gap-3"
+                >
+                  <span class="mt-1 h-2 w-2 rounded-full bg-primary" />
+                  <span>{{ step }}</span>
+                </Motion>
+              </ul>
 
-            <div class="grid grid-cols-3 gap-3 mt-6">
-              <div
-                v-for="stat in badgeHighlights"
-                :key="stat.label"
-                class="rounded-2xl border border-white/60 bg-white/80 px-4 py-3 shadow-sm"
-              >
-                <p class="text-xs uppercase tracking-wide text-slate-500">{{ stat.label }}</p>
-                <p class="text-2xl font-semibold text-primary">{{ stat.value }}</p>
+              <div class="grid grid-cols-3 gap-3 text-left">
+                <Motion
+                  v-for="(stat, index) in badgeHighlights"
+                  :key="stat.label"
+                  tag="div"
+                  :initial="{ opacity: 0, y: 16, scale: 0.96 }"
+                  :enter="{ opacity: 1, y: 0, scale: 1, transition: { delay: 0.32 + index * 0.08, duration: 0.4, ease: 'easeOut' } }"
+                  class="rounded-2xl border border-white/60 bg-white/80 px-4 py-3 shadow-sm"
+                >
+                  <p class="text-xs uppercase tracking-wide text-slate-500">{{ stat.label }}</p>
+                  <p class="text-2xl font-semibold text-primary">{{ stat.value }}</p>
+                </Motion>
               </div>
             </div>
           </Motion>
-        </section>
-      </div>
+        </div>
+      </UCard>
     </Motion>
   </div>
 </template>
-
-<style scoped>
-.auth-shell.register-shell {
-  min-height: 100vh;
-  background: radial-gradient(circle at 80% 20%, #7f1d1d, #220304 60%, #120102 100%);
-  padding: clamp(1.5rem, 4vw, 3rem);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.register-shell .auth-glow {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 70% 20%, rgba(244, 114, 182, 0.35), transparent 45%),
-    radial-gradient(circle at 10% 80%, rgba(248, 113, 113, 0.25), transparent 45%);
-  filter: blur(30px);
-  opacity: 0.65;
-  z-index: 0;
-}
-.register-card {
-  width: min(1100px, 100%);
-  z-index: 1;
-}
-.register-card__inner {
-  background: #220304;
-  border-radius: 40px;
-  box-shadow: 0 45px 90px rgba(0, 0, 0, 0.35);
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  position: relative;
-  overflow: hidden;
-}
-.register-card__inner::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 40px;
-  background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.08), transparent 45%);
-  pointer-events: none;
-}
-.register-card__inner > * {
-  position: relative;
-  z-index: 2;
-}
-.register-card__curve {
-  position: absolute;
-  inset: -3% 35% -3% -10%;
-  pointer-events: none;
-  z-index: 1;
-  transform: scaleX(-1);
-  filter: drop-shadow(12px 0 35px rgba(0, 0, 0, 0.35));
-}
-.register-card__curve svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-.register-card__form {
-  padding: clamp(1.5rem, 4vw, 3rem);
-  background: #220304;
-  color: #fdf4f5;
-  position: relative;
-}
-.register-card__form::after {
-  content: '';
-  position: absolute;
-  inset: 1.5rem;
-  border-radius: 36px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  pointer-events: none;
-}
-.register-card__form :deep(.u-input) {
-  background-color: rgba(255, 255, 255, 0.08);
-  border-color: transparent;
-  backdrop-filter: blur(8px);
-  color: #fdf4f5;
-}
-.register-card__form :deep(.u-input:focus-within) {
-  border-color: rgba(255, 255, 255, 0.35);
-}
-.register-card__form :deep(.u-button) {
-  border-radius: 999px;
-  background: linear-gradient(90deg, #dc2626, #f87171);
-  border: none;
-}
-.register-card__form :deep(.u-checkbox-label) {
-  color: rgba(255, 255, 255, 0.7);
-}
-.register-card__showcase {
-  position: relative;
-  padding: clamp(1.5rem, 4vw, 3rem);
-  padding-left: clamp(1rem, 3vw, 2rem);
-  color: #0f172a;
-  border-top-right-radius: 40px;
-  border-bottom-right-radius: 40px;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.97), rgba(255, 228, 232, 0.97));
-  box-shadow: inset 0 0 50px rgba(255, 255, 255, 0.5);
-}
-.register-card__showcase::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-top-right-radius: 40px;
-  border-bottom-right-radius: 40px;
-  background: radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.5), transparent 55%);
-  opacity: 0.4;
-}
-.register-card__showcase > * {
-  position: relative;
-  z-index: 1;
-}
-@media (max-width: 960px) {
-  .register-card__inner {
-    border-radius: 28px;
-    overflow: visible;
-  }
-  .register-card__form::after {
-    inset: 1rem;
-    border-radius: 28px;
-  }
-  .register-card__curve {
-    display: none;
-  }
-}
-</style>
