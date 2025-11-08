@@ -23,20 +23,17 @@ export function useShowtimeLayout(idRef: Ref<string>) {
         set.has(k) ? set.delete(k) : set.add(k)
     }
 
-    async function fetchLayout() {
+    async function fetchLayout(options?: { silent?: boolean }) {
         const showtimeId = idRef.value?.trim()
         if (!showtimeId) return
 
-        loading.value = true
+        const silent = !!options?.silent
+        if (!silent) loading.value = true
         error.value = null
         try {
-            // ⚠️ usa 'availability' porque ese es tu handler público
             const res = await $fetch<LayoutRes>(`/api/showtimes/${showtimeId}/availability`, {
                 credentials: 'include'
             })
-            // debug útil
-            console.log('[layout]', showtimeId, res)
-
             const arr = Array.isArray(res?.tables) ? res.tables : []
             tables.value = arr.map(t => ({
                 table: t.table,
@@ -44,7 +41,6 @@ export function useShowtimeLayout(idRef: Ref<string>) {
                 seats: (t.seats || []).map(s => ({ code: s.code, taken: !!s.taken }))
             }))
 
-            // si un asiento seleccionado pasó a taken, límpialo
             for (const key of Array.from(selected.value)) {
                 const [tb, sc] = key.split('-')
                 const nowTaken = tables.value.find(x => x.table === tb)?.seats.find(x => x.code === sc)?.taken
@@ -55,31 +51,17 @@ export function useShowtimeLayout(idRef: Ref<string>) {
             error.value = e?.data?.message || e?.message || 'No se pudo cargar el layout'
             tables.value = []
         } finally {
-            loading.value = false
+            if (!silent) loading.value = false
         }
     }
 
-    // refresco automático
-    let timer: any = null
-    function startAutoRefresh(ms = 10_000) {
-        stopAutoRefresh()
-        timer = setInterval(fetchLayout, ms)
-    }
-    function stopAutoRefresh() {
-        if (timer) { clearInterval(timer); timer = null }
-    }
-
-    // 🔁 dispara cuando el id esté listo o cambie
     watch(idRef, (v) => {
         if (v) fetchLayout()
     }, { immediate: true })
 
-    onBeforeUnmount(stopAutoRefresh)
-
     return {
         loading, error, tables, totalSeats, takenSeats, freeSeats,
         selected, selectionList,
-        fetchLayout, toggleSeat, resetSelection,
-        startAutoRefresh, stopAutoRefresh
+        fetchLayout, toggleSeat, resetSelection
     }
 }
