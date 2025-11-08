@@ -26,27 +26,47 @@ onMounted(async () => {
 
 <template>
   <UContainer class="py-8 space-y-6">
-    <AdminHeader
-      title="Recetas"
-      subtitle="Define recetas usando ingredientes base; se usarán luego por el Menú."
+    <Motion
+      tag="section"
+      :initial="{ opacity: 0, y: -14 }"
+      :enter="{ opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }"
     >
-      <template #actions>
-        <div class="flex items-center gap-2">
-          <UInput
-            v-model.trim="q"
-            type="search"
-            placeholder="Buscar receta…"
-            icon="i-heroicons-magnifying-glass-20-solid"
-            class="w-64"
-            @keydown.enter="fetchRecipes(1, 50, q)"
-          />
-          <UButton v-if="q" variant="ghost" color="gray" @click="q = ''; fetchRecipes(1, 50)">
-            Limpiar
-          </UButton>
-          <UButton color="primary" @click="startCreate">Nueva</UButton>
-        </div>
-      </template>
-    </AdminHeader>
+      <AdminHeader
+        title="Recetas"
+        subtitle="Define recetas usando ingredientes base; se usarán luego por el Menú."
+      >
+        <template #actions>
+          <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <UInput
+                v-model.trim="q"
+                type="search"
+                placeholder="Buscar receta…"
+                icon="i-heroicons-magnifying-glass-20-solid"
+                class="w-full sm:w-64"
+                @keydown.enter="fetchRecipes(1, 50, q)"
+              />
+              <UButton
+                v-if="q"
+                variant="ghost"
+                color="gray"
+                class="w-full sm:w-auto"
+                @click="q = ''; fetchRecipes(1, 50)"
+              >
+                Limpiar
+              </UButton>
+            </div>
+            <UButton
+              color="primary"
+              class="w-full sm:w-auto"
+              @click="startCreate"
+            >
+              Nueva
+            </UButton>
+          </div>
+        </template>
+      </AdminHeader>
+    </Motion>
 
     <AdminRecipeList
       :items="filtered"

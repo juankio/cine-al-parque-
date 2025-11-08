@@ -72,7 +72,9 @@ export function useAdminRecipes() {
     async function fetchIngredientsOptions() {
         ingLoading.value = true
         try {
-            const data = await rfetch('/api/admin/ingredients', { query: { page: 1, pageSize: 500 } })
+            const data = await rfetch('/api/admin/ingredients', {
+                query: { page: 1, pageSize: 500, activo: 'true' }
+            })
             const items = (data as any)?.items || []
             ingOptions.value = items.map((i: any) => ({
                 value: i._id,

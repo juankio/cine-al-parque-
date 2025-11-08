@@ -6,13 +6,16 @@ import { Ingredient } from '@/server/models/Ingredient'
 export default defineEventHandler(async (event) => {
     await connectDB(); await requireAdmin(event)
 
-    const q = getQuery(event).q ? String(getQuery(event).q) : ''
-    const page = Number(getQuery(event).page || 1)
-    const pageSize = Number(getQuery(event).pageSize || 20)
+    const query = getQuery(event)
+    const q = query.q ? String(query.q) : ''
+    const activoParam = typeof query.activo === 'string' ? query.activo : undefined
+    const page = Number(query.page || 1)
+    const pageSize = Number(query.pageSize || 20)
 
-    const filter = q
-        ? { nombre: { $regex: q, $options: 'i' } }
-        : {}
+    const filter: Record<string, any> = {}
+    if (q) filter.nombre = { $regex: q, $options: 'i' }
+    if (activoParam === 'true') filter.activo = true
+    else if (activoParam === 'false') filter.activo = false
 
     const [items, total] = await Promise.all([
         Ingredient.find(filter)

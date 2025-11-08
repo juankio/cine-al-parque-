@@ -108,15 +108,6 @@ async function save() {
   }
 }
 
-async function toggleActivo(ing: any) {
-  try {
-    await updateIngredient(ing._id, { activo: !ing.activo });
-    await fetchIngredients(1, 50, q.value || "");
-  } catch (e) {
-    toast.add({ title: "No se pudo actualizar el estado", color: "error" });
-  }
-}
-
 function askDelete(ing: any) {
   toDelete.value = ing;
   openDelete.value = true;
@@ -132,31 +123,52 @@ async function doDelete() {
 
 <template>
   <UContainer class="py-8 space-y-6">
-    <AdminHeader
-      title="Ingredientes"
-      subtitle="Gestiona los ingredientes base usados en tus recetas y menú."
+    <Motion
+      tag="section"
+      :initial="{ opacity: 0, y: -16 }"
+      :enter="{ opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } }"
     >
-      <template #actions>
-        <div class="flex items-center gap-2">
-          <UInput
-            v-model.trim="q"
-            type="search"
-            placeholder="Buscar ingrediente…"
-            icon="i-heroicons-magnifying-glass-20-solid"
-            class="w-64"
-          />
-          <UButton v-if="q" variant="ghost" color="gray" @click="q = ''">Limpiar</UButton>
-          <UButton color="primary" @click="startCreate">Nuevo</UButton>
-        </div>
-      </template>
-    </AdminHeader>
+      <AdminHeader
+        title="Ingredientes"
+        subtitle="Gestiona los ingredientes base usados en tus recetas y menú."
+      >
+        <template #actions>
+          <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <div class="flex w-full flex-col gap-2 sm:flex-row sm:w-auto sm:items-center">
+              <UInput
+                v-model.trim="q"
+                type="search"
+                placeholder="Buscar ingrediente…"
+                icon="i-heroicons-magnifying-glass-20-solid"
+                class="w-full sm:w-64"
+              />
+              <UButton
+                v-if="q"
+                variant="ghost"
+                color="gray"
+                class="w-full sm:w-auto"
+                @click="q = ''"
+              >
+                Limpiar
+              </UButton>
+            </div>
+            <UButton
+              color="primary"
+              class="w-full sm:w-auto"
+              @click="startCreate"
+            >
+              Nuevo
+            </UButton>
+          </div>
+        </template>
+      </AdminHeader>
+    </Motion>
 
     <AdminIngredientList
       :items="filtered"
       :loading="loading"
       :error="error"
       @select="startEdit"
-      @toggle="toggleActivo"
       @delete="askDelete"
     />
 
