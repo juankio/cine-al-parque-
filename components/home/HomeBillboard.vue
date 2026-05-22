@@ -1,69 +1,69 @@
 <template>
-  <Motion tag="section" v-bind="sectionProps">
-    <Motion tag="h2" class="text-xl font-semibold mb-3" v-bind="headerMotion">En cartelera</Motion>
+  <section ref="sectionRef" class="space-y-6">
+    <h2 class="text-2xl font-bold tracking-tight text-foreground">En cartelera</h2>
 
-    <div v-if="props.loading" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <Motion
-        v-for="i in 6"
-        :key="i"
-        tag="div"
-        v-bind="skeletonMotion(i)"
-      >
-        <USkeleton class="h-56 rounded-2xl" />
-      </Motion>
+    <div v-if="props.loading" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-for="i in 6" :key="i" class="animate-pulse flex flex-col gap-3">
+        <USkeleton class="h-64 w-full rounded-xl" />
+        <USkeleton class="h-6 w-3/4 rounded" />
+        <USkeleton class="h-4 w-1/2 rounded" />
+      </div>
     </div>
 
     <UAlert
       v-else-if="props.error"
-      color="gray"
+      color="error"
       variant="soft"
       icon="i-heroicons-exclamation-triangle"
       :description="props.error"
       title="No se pudo cargar la cartelera"
     />
 
-    <div v-else-if="props.filtered.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <Motion
+    <div v-else-if="props.filtered.length" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <UCard
         v-for="(m, idx) in props.filtered"
         :key="m.id"
-        tag="div"
-        class="motion-card h-full"
-        v-bind="cardMotion(idx)"
+        class="billboard-card flex flex-col h-full rounded-xl border border-border bg-background transition-all hover:shadow-md hover:border-primary/50 overflow-hidden opacity-0"
+        :ui="{ body: { padding: 'p-0' } }"
       >
-        <UCard class="motion-card__inner rounded-2xl h-full border border-default/40 bg-white/90 dark:bg-slate-900/90 transition hover:border-primary/60 shadow-[0_12px_30px_rgba(15,23,42,.18)] dark:shadow-[0_18px_36px_rgba(0,0,0,.4)]">
-          <img :src="m.poster || '/favicon.ico'" class="w-full h-52 sm:h-48 md:h-56 object-cover rounded-lg border border-default/60" />
-          <div class="mt-3 space-y-2">
-            <div class="font-semibold text-base truncate sm:truncate-none">{{ m.titulo }}</div>
-            <div class="text-xs sm:text-sm text-muted flex flex-wrap gap-1.5">
-              <span>{{ m.clasificacion || '-' }}</span>
+        <div class="aspect-[2/3] w-full overflow-hidden relative">
+          <img :src="m.poster || '/favicon.ico'" class="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
+        </div>
+        <div class="p-5 flex flex-col flex-1 space-y-3">
+          <div class="space-y-1">
+            <h3 class="font-semibold text-lg leading-tight line-clamp-1">{{ m.titulo }}</h3>
+            <div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <span class="font-medium px-2 py-0.5 rounded-md bg-secondary text-secondary-foreground text-xs">{{ m.clasificacion || 'T.P' }}</span>
               <span>•</span>
               <span>{{ m.duracion ? `${m.duracion} min` : '-' }}</span>
             </div>
-
-            <div class="mt-2 flex flex-wrap gap-2">
-              <UButton
-                v-for="s in props.upcomingShowtimes(m.id, 3)"
-                :key="s.id"
-                size="sm"
-                variant="outline"
-                color="primary"
-                :to="`/showtimes/${s.id}`"
-              >
-                {{ fmtTime(s.fechaHora) }}
-              </UButton>
-            </div>
           </div>
-        </UCard>
-      </Motion>
+
+          <div class="pt-2 mt-auto flex flex-wrap gap-2">
+            <UButton
+              v-for="s in props.upcomingShowtimes(m.id, 3)"
+              :key="s.id"
+              size="sm"
+              variant="soft"
+              color="primary"
+              :to="`/showtimes/${s.id}`"
+              class="font-medium"
+            >
+              {{ fmtTime(s.fechaHora) }}
+            </UButton>
+          </div>
+        </div>
+      </UCard>
     </div>
 
-    <EmptyState v-else description="No hay peliculas que coincidan con tu busqueda." />
-  </Motion>
+    <EmptyState v-else description="No hay películas que coincidan con tu búsqueda." />
+  </section>
 </template>
 
 <script setup lang="ts">
 import type { Movie, Showtime } from '~/composables/useMovies'
-import { useAttrs, computed } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import anime from 'animejs'
 
 const props = defineProps<{
   loading: boolean
@@ -72,62 +72,30 @@ const props = defineProps<{
   upcomingShowtimes: (movieId: string, limit?: number) => Showtime[]
 }>()
 
-type MotionPreset = {
-  initial: Record<string, any>
-  enter: Record<string, any>
-  hover?: Record<string, any>
+const sectionRef = ref<HTMLElement | null>(null)
+
+const animateCards = () => {
+  anime({
+    targets: '.billboard-card',
+    opacity: [0, 1],
+    translateY: [20, 0],
+    delay: anime.stagger(100),
+    duration: 800,
+    easing: 'easeOutExpo'
+  })
 }
 
-const attrs = useAttrs()
-
-const rollBottom = (delay = 0): MotionPreset => ({
-  initial: {
-    opacity: 0,
-    y: 40,
-    rotateX: -60,
-    scale: 0.95,
-    transformOrigin: 'bottom center',
-  },
-  enter: {
-    opacity: 1,
-    y: 0,
-    rotateX: 0,
-    scale: 1,
-    transition: {
-      delay,
-      type: 'spring',
-      stiffness: 190,
-      damping: 21,
-      mass: 0.9,
-    },
-  },
+onMounted(() => {
+  if (!props.loading && props.filtered.length) {
+    animateCards()
+  }
 })
 
-const withHoverTilt = (preset: MotionPreset): MotionPreset => ({
-  ...preset,
-  hover: {
-    scale: 1.025,
-    rotateX: -1.4,
-    rotateY: 1.4,
-    transition: {
-      type: 'spring',
-      stiffness: 240,
-      damping: 19,
-    },
-  },
+watch(() => props.loading, (newLoading) => {
+  if (!newLoading && props.filtered.length) {
+    setTimeout(animateCards, 50)
+  }
 })
-
-const sectionMotion = rollBottom(0.05)
-const headerMotion = rollBottom(0.07)
-const skeletonMotion = (index: number) => rollBottom(0.09 + index * 0.05)
-const cardMotion = (index: number) => ({
-  ...withHoverTilt(rollBottom(0.12 + index * 0.06)),
-})
-
-const sectionProps = computed(() => ({
-  ...attrs,
-  ...sectionMotion,
-}))
 
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })

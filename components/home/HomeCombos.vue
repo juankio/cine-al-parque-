@@ -1,196 +1,78 @@
 <template>
-  <Motion tag="section" v-bind="sectionProps">
-    <Motion tag="div" class="flex items-center justify-between mb-3" v-bind="headerMotion">
-      <div class="text-xl font-semibold flex items-center gap-2">
+  <section class="space-y-6">
+    <div class="flex items-center justify-between">
+      <h2 class="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
         <UIcon name="i-heroicons-fire" class="text-primary" /> Combos para hoy
-      </div>
-      <UButton
-        v-if="!props.loading"
-        size="xs"
-        variant="ghost"
-        color="gray"
-        @click="emit('refresh')"
-      >
-        Actualizar
-      </UButton>
-    </Motion>
-
-    <div v-if="props.loading" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <Motion
-        v-for="i in 6"
-        :key="i"
-        tag="div"
-        v-bind="skeletonMotion(i)"
-      >
-        <USkeleton class="h-28 rounded-2xl" />
-      </Motion>
+      </h2>
+      <UButton v-if="!loading" size="sm" variant="ghost" color="neutral" @click="emit('refresh')">Actualizar</UButton>
     </div>
 
-    <div v-else-if="props.error" class="space-y-2">
-      <UAlert
-        color="gray"
-        variant="soft"
-        icon="i-heroicons-exclamation-triangle"
-        :description="props.error"
-        title="No se pudieron cargar los combos"
-      />
-      <UButton size="xs" color="primary" variant="soft" @click="emit('refresh')">
-        Reintentar
-      </UButton>
+    <div v-if="loading" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <USkeleton v-for="i in 6" :key="i" class="h-32 w-full rounded-xl animate-pulse" />
     </div>
 
-    <div v-else-if="props.combos.length" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <Motion
-        v-for="(c, idx) in props.combos"
-        :key="c._id"
-        tag="div"
-        class="motion-card h-full"
-        v-bind="cardMotion(idx)"
+    <div v-else-if="error" class="space-y-2">
+      <UAlert color="error" variant="soft" icon="i-heroicons-exclamation-triangle" :description="error" title="Error" />
+      <UButton size="sm" color="primary" variant="soft" @click="emit('refresh')">Reintentar</UButton>
+    </div>
+
+    <div v-else-if="combos.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <UCard
+        v-for="c in combos" :key="c._id"
+        class="combo-card flex flex-col h-full rounded-xl border border-border bg-background transition-all hover:shadow-md hover:border-primary/50 opacity-0 group overflow-hidden"
       >
-        <UCard class="motion-card__inner rounded-2xl h-full border border-default/40 bg-white/90 dark:bg-slate-900/90 hover:border-primary/60 transition shadow-[0_15px_35px_rgba(15,23,42,.2)] dark:shadow-[0_20px_40px_rgba(0,0,0,.45)] backdrop-blur">
-          <div class="flex flex-col gap-4 h-full">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0 space-y-1">
-                <p class="text-[11px] uppercase tracking-wide text-muted flex items-center gap-1">
-                  <UIcon name="i-heroicons-sparkles" class="text-primary" />
-                  Recomendado
-                </p>
-                <div class="font-semibold text-base truncate">{{ c.nombre }}</div>
+        <div class="relative z-10 flex flex-col h-full gap-3 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-primary mb-1">
+                <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5" /> Recomendado
               </div>
-              <div class="text-right shrink-0">
-                <p class="text-[11px] text-muted">Desde</p>
-                <p class="text-lg font-bold text-primary">$ {{ money(c.precio) }}</p>
-              </div>
+              <h3 class="font-semibold text-base truncate">{{ c.nombre }}</h3>
             </div>
-
-            <p v-if="c.descripcion" class="text-sm text-muted leading-snug line-clamp-2">
-              {{ c.descripcion }}
-            </p>
-
-            <div class="flex flex-wrap gap-2 text-xs">
-              <UBadge
-                v-if="c.categoria"
-                size="sm"
-                variant="soft"
-                color="primary"
-                class="capitalize px-2.5 py-1 rounded-full text-[11px]"
-              >
-                {{ c.categoria }}
-              </UBadge>
-              <span
-                v-for="t in (c.tags || [])"
-                :key="t"
-                class="inline-flex items-center gap-1 rounded-full border border-default/30 px-2.5 py-1 text-[11px] uppercase tracking-wide text-muted"
-              >
-                <UIcon name="i-heroicons-hashtag" class="text-primary/70" />
-                {{ t }}
-              </span>
-            </div>
-
-            <div class="mt-auto flex items-center justify-between gap-3 pt-3 border-t border-default/40">
-              <span class="text-xs text-muted">
-                Listo en minutos
-              </span>
-              <UButton
-                size="sm"
-                color="primary"
-                :to="`/menu`"
-                variant="solid"
-                icon="i-heroicons-arrow-right"
-                trailing
-              >
-                Ver
-              </UButton>
+            <div class="text-right shrink-0">
+              <p class="text-[10px] uppercase text-muted-foreground font-semibold">Desde</p>
+              <p class="text-lg font-bold">$ {{ (c.precio || 0).toLocaleString('es-CO') }}</p>
             </div>
           </div>
-        </UCard>
-      </Motion>
+
+          <p v-if="c.descripcion" class="text-sm text-muted-foreground line-clamp-2">{{ c.descripcion }}</p>
+
+          <div class="flex flex-wrap gap-1.5 mt-auto pt-2 text-xs">
+            <UBadge v-if="c.categoria" size="sm" variant="subtle" color="primary" class="capitalize font-medium">{{ c.categoria }}</UBadge>
+            <span v-for="t in c.tags" :key="t" class="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground bg-secondary/50">
+              #{{ t }}
+            </span>
+          </div>
+          
+          <div class="pt-3 border-t border-border mt-2 flex items-center justify-between">
+            <span class="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+              <UIcon name="i-heroicons-check-circle" class="w-4 h-4 text-green-500" /> Listo rápido
+            </span>
+            <UButton size="sm" to="/menu" variant="soft" trailing-icon="i-heroicons-arrow-right">Menú</UButton>
+          </div>
+        </div>
+      </UCard>
     </div>
 
-    <EmptyState v-else description="Aun no hay combos disponibles." />
-  </Motion>
+    <EmptyState v-else description="Aún no hay combos." />
+  </section>
 </template>
 
 <script setup lang="ts">
-import { useAttrs, computed } from 'vue'
-
-interface ComboItem {
-  _id: string
-  nombre: string
-  precio: number
-  categoria?: string
-  tags?: string[]
-}
+import { onMounted, watch } from 'vue'
+import anime from 'animejs'
 
 const props = defineProps<{
-  loading: boolean
-  error: string | null
-  combos: ComboItem[]
+  loading: boolean, error: string | null, combos: { _id: string, nombre: string, precio: number, categoria?: string, tags?: string[], descripcion?: string }[]
 }>()
 
-const emit = defineEmits<{
-  (event: 'refresh'): void
-}>()
+const emit = defineEmits<{ (e: 'refresh'): void }>()
 
-type MotionPreset = {
-  initial: Record<string, any>
-  enter: Record<string, any>
-  hover?: Record<string, any>
+const animateCards = () => {
+  anime({ targets: '.combo-card', opacity: [0, 1], scale: [0.95, 1], delay: anime.stagger(100), duration: 600, easing: 'easeOutBack' })
 }
 
-const attrs = useAttrs()
-
-const rollBottom = (delay = 0): MotionPreset => ({
-  initial: {
-    opacity: 0,
-    y: 38,
-    rotateX: -55,
-    scale: 0.95,
-    transformOrigin: 'bottom center',
-  },
-  enter: {
-    opacity: 1,
-    y: 0,
-    rotateX: 0,
-    scale: 1,
-    transition: {
-      delay,
-      type: 'spring',
-      stiffness: 195,
-      damping: 20,
-      mass: 0.9,
-    },
-  },
-})
-
-const withHoverLift = (preset: MotionPreset): MotionPreset => ({
-  ...preset,
-  hover: {
-    scale: 1.03,
-    rotateX: -1.6,
-    rotateY: 1.6,
-    transition: {
-      type: 'spring',
-      stiffness: 240,
-      damping: 18,
-    },
-  },
-})
-
-const sectionMotion = rollBottom(0.05)
-const headerMotion = rollBottom(0.07)
-const skeletonMotion = (index: number) => rollBottom(0.09 + index * 0.04)
-const cardMotion = (index: number) => ({
-  ...withHoverLift(rollBottom(0.12 + index * 0.06)),
-})
-
-const sectionProps = computed(() => ({
-  ...attrs,
-  ...sectionMotion,
-}))
-
-function money(n?: number) {
-  return (Number(n || 0)).toLocaleString('es-CO')
-}
+onMounted(() => { if (!props.loading && props.combos.length) animateCards() })
+watch(() => props.loading, (n) => { if (!n && props.combos.length) setTimeout(animateCards, 50) })
 </script>
 

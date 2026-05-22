@@ -1,90 +1,94 @@
 <template>
-  <Motion tag="section" v-bind="sectionProps">
-    <Motion tag="div" class="flex items-center justify-between mb-3" v-bind="headerMotion">
-      <h2 class="text-xl font-semibold flex items-center gap-2">
+  <section class="space-y-6">
+    <div class="flex items-center justify-between">
+      <h2 class="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
         <UIcon name="i-heroicons-bolt" class="text-primary" /> En vivo hoy
       </h2>
       <UButton
         v-if="hasSections"
-        size="xs"
+        size="sm"
         variant="ghost"
-        color="gray"
+        color="neutral"
         :loading="props.loading"
         @click="emit('refresh')"
-      >Actualizar</UButton>
-    </Motion>
-
-    <div v-if="props.loading" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <Motion
-        v-for="i in 6"
-        :key="i"
-        tag="div"
-        v-bind="skeletonMotion(i)"
       >
-        <USkeleton class="h-20 rounded-xl" />
-      </Motion>
+        Actualizar
+      </UButton>
+    </div>
+
+    <div v-if="props.loading" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-for="i in 6" :key="i" class="animate-pulse">
+        <USkeleton class="h-28 w-full rounded-xl" />
+      </div>
     </div>
 
     <UAlert
       v-else-if="props.error"
-      color="gray"
+      color="error"
       variant="soft"
       icon="i-heroicons-exclamation-triangle"
       :description="props.error"
       title="No se pudieron cargar las funciones"
     />
 
-    <div v-else-if="hasSections" class="space-y-5">
-      <Motion
-        v-for="(section, sectionIndex) in props.sections"
+    <div v-else-if="hasSections" class="space-y-8">
+      <div
+        v-for="section in props.sections"
         :key="section.id"
-        tag="div"
-        class="space-y-3"
-        v-bind="listMotion(sectionIndex)"
+        class="space-y-4"
       >
-        <Motion tag="div" class="flex items-center justify-between" v-bind="subheaderMotion(sectionIndex)">
-          <h3 class="text-sm font-semibold uppercase tracking-wide text-muted">{{ section.label }}</h3>
-        </Motion>
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Motion
-            v-for="(s, cardIndex) in section.items"
+        <h3 class="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{{ section.label }}</h3>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <UCard
+            v-for="s in section.items"
             :key="s._id"
-            tag="div"
-            class="motion-card h-full"
-            v-bind="cardMotion(cardIndex)"
+            class="live-card h-full rounded-xl border border-border bg-background transition-all hover:shadow-md hover:border-primary/50 opacity-0"
+            :ui="{ body: { padding: 'p-4' } }"
           >
-            <UCard class="motion-card__inner rounded-2xl h-full border border-default/40 bg-white/90 dark:bg-slate-900/90 shadow-[0_12px_30px_rgba(15,23,42,.18)] dark:shadow-[0_18px_36px_rgba(0,0,0,.4)] backdrop-blur transition hover:border-primary/60">
-              <div class="flex flex-col sm:flex-row gap-4 sm:gap-3 items-start sm:items-center">
-                <img :src="s.poster || '/favicon.ico'" class="w-full sm:w-20 h-40 sm:h-24 object-cover rounded-lg border border-default/60" />
-                <div class="min-w-0 flex-1 space-y-2 text-left">
-                  <div class="font-medium text-base truncate sm:truncate-none">{{ s.titulo || 'Sin titulo' }}</div>
-                  <div class="text-xs sm:text-sm text-muted">
-                    {{ fmtTime(s.fechaHora) }} • Sala {{ s.sala || '-' }} • $ {{ money(s.price) }}
+            <div class="flex gap-4 items-start">
+              <img :src="s.poster || '/favicon.ico'" class="w-20 h-28 object-cover rounded-lg border border-border" />
+              <div class="flex flex-col flex-1 h-full min-w-0">
+                <div class="font-medium text-base truncate">{{ s.titulo || 'Sin título' }}</div>
+                <div class="text-sm text-muted-foreground mt-1 space-y-0.5">
+                  <div class="flex items-center gap-1">
+                    <UIcon name="i-heroicons-clock" class="w-3.5 h-3.5" />
+                    {{ fmtTime(s.fechaHora) }}
                   </div>
-                  <div class="pt-1">
-                    <UButton
-                      :to="`/showtimes/${s._id}`"
-                      class="w-full sm:w-auto"
-                      size="sm"
-                      color="primary"
-                      variant="solid"
-                    >Reservar</UButton>
+                  <div class="flex items-center gap-1">
+                    <UIcon name="i-heroicons-map-pin" class="w-3.5 h-3.5" />
+                    Sala {{ s.sala || '-' }}
+                  </div>
+                  <div class="flex items-center gap-1 font-medium text-primary">
+                    <UIcon name="i-heroicons-banknotes" class="w-3.5 h-3.5" />
+                    $ {{ money(s.price) }}
                   </div>
                 </div>
+                <div class="mt-auto pt-3">
+                  <UButton
+                    :to="`/showtimes/${s._id}`"
+                    class="w-full justify-center"
+                    size="sm"
+                    color="primary"
+                    variant="soft"
+                  >
+                    Reservar
+                  </UButton>
+                </div>
               </div>
-            </UCard>
-          </Motion>
+            </div>
+          </UCard>
         </div>
-      </Motion>
+      </div>
     </div>
 
-    <EmptyState v-else description="No hay funciones proximas en las proximas 48 horas." />
-  </Motion>
+    <EmptyState v-else description="No hay funciones próximas en las próximas 48 horas." />
+  </section>
 </template>
 
 <script setup lang="ts">
 import type { PublicShowtime } from '~/composables/useShowtimes'
-import { useAttrs, computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
+import anime from 'animejs'
 
 interface LiveSection {
   id: string
@@ -104,64 +108,28 @@ const emit = defineEmits<{
 
 const hasSections = computed(() => props.sections.length > 0)
 
-type MotionPreset = {
-  initial: Record<string, any>
-  enter: Record<string, any>
-  hover?: Record<string, any>
+const animateCards = () => {
+  anime({
+    targets: '.live-card',
+    opacity: [0, 1],
+    translateX: [-15, 0],
+    delay: anime.stagger(80),
+    duration: 600,
+    easing: 'easeOutCubic'
+  })
 }
 
-const attrs = useAttrs()
-
-const rollBottom = (delay = 0): MotionPreset => ({
-  initial: {
-    opacity: 0,
-    y: 40,
-    rotateX: -65,
-    scale: 0.94,
-    transformOrigin: 'bottom center',
-  },
-  enter: {
-    opacity: 1,
-    y: 0,
-    rotateX: 0,
-    scale: 1,
-    transition: {
-      delay,
-      type: 'spring',
-      stiffness: 190,
-      damping: 20,
-      mass: 0.9,
-    },
-  },
+onMounted(() => {
+  if (!props.loading && hasSections.value) {
+    animateCards()
+  }
 })
 
-const withHoverTilt = (preset: MotionPreset): MotionPreset => ({
-  ...preset,
-  hover: {
-    scale: 1.02,
-    rotateX: -2,
-    rotateY: 2,
-    transition: {
-      type: 'spring',
-      stiffness: 260,
-      damping: 20,
-    },
-  },
+watch(() => props.loading, (newLoading) => {
+  if (!newLoading && hasSections.value) {
+    setTimeout(animateCards, 50)
+  }
 })
-
-const sectionMotion = rollBottom(0.05)
-const headerMotion = rollBottom(0.08)
-const skeletonMotion = (index: number) => rollBottom(0.1 + index * 0.05)
-const listMotion = (index: number) => rollBottom(0.12 + index * 0.08)
-const subheaderMotion = (index: number) => rollBottom(0.14 + index * 0.08)
-const cardMotion = (index: number) => ({
-  ...withHoverTilt(rollBottom(0.18 + index * 0.06)),
-})
-
-const sectionProps = computed(() => ({
-  ...attrs,
-  ...sectionMotion,
-}))
 
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
