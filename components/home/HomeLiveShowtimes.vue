@@ -86,7 +86,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { animate, createTimeline, stagger, random } from 'animejs';
+import { onMounted, watch, computed } from 'vue'
 
 const props = defineProps<{
   loading: boolean
@@ -99,21 +100,28 @@ const emit = defineEmits<{
 }>()
 
 const isClient = typeof window !== 'undefined'
+const hasSections = computed(() => props.sections && props.sections.length > 0)
+
+const fmtTime = (dateStr: string) => {
+  if (!dateStr) return '--:--'
+  const d = new Date(dateStr)
+  return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+}
+
+const money = (val?: number) => {
+  return (val || 0).toLocaleString('es-CO')
+}
 
 const animateShowtimes = () => {
   if (isClient) {
-    import('animejs').then((module) => {
-      const anime = module.default
-      anime({
-        targets: '.live-card',
+    animate('.live-card', {
         opacity: [0, 1],
         translateX: [-20, 0],
         duration: 600,
-        delay: anime.stagger(100),
-        easing: 'easeOutQuart'
+        delay: stagger(100),
+        ease: 'outQuart'
       })
-    })
-  }
+    }
 }
 
 onMounted(() => {

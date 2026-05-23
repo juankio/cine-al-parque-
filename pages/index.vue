@@ -49,9 +49,7 @@ const handleComboFocus = () => {
 }
 onMounted(async () => {
   // Peliculas
-  const list = await fetchMovies()
-  // precarga showtimes por pelicula (no bloquea UI)
-  list.forEach(m => { fetchShowtimes(m.id).catch(() => {}) })
+  await fetchMovies()
 
   // En vivo hoy
   await fetchUpcoming({ hours: LIVE_REFRESH_HOURS, limit: LIVE_REFRESH_LIMIT })
@@ -79,49 +77,49 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <UContainer class="py-6 space-y-8">
-    <HomeHero v-model="q" />
+  <div class="relative min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-primary">
+    <!-- Ambient Light global -->
+    <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+      <div class="absolute -top-[20%] -left-[10%] h-[50%] w-[50%] rounded-full bg-primary/5 blur-[120px] mix-blend-screen"></div>
+    </div>
 
-    <template v-if="isSearching">
-      <div
-        id="cartelera"
-        class="h-0"
-        aria-hidden="true"
-      />
-      <HomeBillboard
-        :loading="moviesLoading"
-        :error="moviesError"
-        :filtered="filteredMovies"
-        :upcoming-showtimes="upcomingShowtimes"
-      />
-    </template>
+    <UContainer class="relative z-10 py-10 space-y-16">
+      <HomeHero v-model="q" />
 
-    <template v-else>
-      <HomeLiveShowtimes
-        :loading="liveLoading"
-        :error="liveError"
-        :sections="liveSections"
-        @refresh="fetchUpcoming({ hours: LIVE_REFRESH_HOURS, limit: LIVE_REFRESH_LIMIT })"
-      />
+      <template v-if="isSearching">
+        <div id="cartelera" class="h-0" aria-hidden="true" />
+        <HomeBillboard
+          :loading="moviesLoading"
+          :error="moviesError"
+          :filtered="filteredMovies"
+          :upcoming-showtimes="upcomingShowtimes"
+        />
+      </template>
 
-      <HomeCombos
-        :loading="combosLoading"
-        :error="combosError"
-        :combos="combos"
-        @refresh="refreshCombos()"
-      />
+      <template v-else>
+        <HomeLiveShowtimes
+          :loading="liveLoading"
+          :error="liveError"
+          :sections="liveSections"
+          @refresh="fetchUpcoming({ hours: LIVE_REFRESH_HOURS, limit: LIVE_REFRESH_LIMIT })"
+        />
 
-      <div
-        id="cartelera"
-        class="h-0"
-        aria-hidden="true"
-      />
-      <HomeBillboard
-        :loading="moviesLoading"
-        :error="moviesError"
-        :filtered="filteredMovies"
-        :upcoming-showtimes="upcomingShowtimes"
-      />
-    </template>
-  </UContainer>
+        <HomeCombos
+          :loading="combosLoading"
+          :error="combosError"
+          :combos="combos"
+          @refresh="refreshCombos()"
+        />
+
+        <div id="cartelera" class="h-0" aria-hidden="true" />
+        
+        <HomeBillboard
+          :loading="moviesLoading"
+          :error="moviesError"
+          :filtered="filteredMovies"
+          :upcoming-showtimes="upcomingShowtimes"
+        />
+      </template>
+    </UContainer>
+  </div>
 </template>

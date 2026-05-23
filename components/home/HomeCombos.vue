@@ -59,6 +59,7 @@
 </template>
 
 <script setup lang="ts">
+import { animate, createTimeline, stagger, random } from 'animejs';
 import { onMounted, watch } from 'vue'
 
 const props = defineProps<{
@@ -70,11 +71,8 @@ const isClient = typeof window !== 'undefined'
 
 const animateCards = () => {
   if (isClient) {
-    import('animejs').then((module) => {
-      const anime = module.default
-      anime({ targets: '.combo-card', opacity: [0, 1], scale: [0.95, 1], delay: anime.stagger(100), duration: 600, easing: 'easeOutBack' })
-    })
-  }
+    animate('.combo-card', { opacity: [0, 1], scale: [0.95, 1], delay: stagger(100), duration: 600, ease: 'outBack' })
+    }
 }
 
 onMounted(() => { if (!props.loading && props.combos.length) animateCards() })

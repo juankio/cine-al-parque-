@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { animate, createTimeline, stagger, random } from 'animejs';
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { useAuth } from '~/composables/useAuth'
 import { onMounted, ref, computed, watch } from 'vue'
@@ -20,17 +21,13 @@ onMounted(() => {
   
   // Navbar entry animation
   if (isClient) {
-    import('animejs').then((module) => {
-      const anime = module.default
-      anime({
-        targets: 'header',
+    animate('header', {
         translateY: [-50, 0],
         opacity: [0, 1],
-        easing: 'easeOutExpo',
+        ease: 'outExpo',
         duration: 800,
       })
-    })
-  }
+    }
 })
 
 const toggleTheme = () => {
@@ -53,17 +50,13 @@ const navItems = computed(() => {
 
 watch(isMenuOpen, (newVal) => {
   if (newVal && isClient) {
-    import('animejs').then((module) => {
-      const anime = module.default
-      anime({
-        targets: menuRef.value,
+    animate(menuRef.value, {
         opacity: [0, 1],
         translateY: [-10, 0],
         duration: 300,
-        easing: 'easeOutExpo'
+        ease: 'outExpo'
       })
-    })
-  }
+    }
 })
 </script>
 
