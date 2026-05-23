@@ -140,7 +140,7 @@ const onSubmit = async (payload: FormSubmitEvent<Schema>) => {
     <!-- Ambient Light -->
     <div class="absolute top-0 right-1/4 w-[500px] h-[500px] bg-rose-500/20 blur-[150px] rounded-full pointer-events-none mix-blend-screen"></div>
 
-    <div class="w-full max-w-[1200px] overflow-hidden rounded-[2.5rem] shadow-2xl border border-white/5 bg-[#0a0a0a]/80 backdrop-blur-2xl">
+    <UCard class="w-full max-w-[1200px] overflow-hidden rounded-[2.5rem] shadow-2xl border border-white/5 bg-[#0a0a0a]/80 backdrop-blur-2xl" :ui="{ body: { padding: 'p-0 sm:p-0' } }">
       <div class="grid grid-cols-1 lg:grid-cols-2 min-h-[700px]">
         
         <!-- Left Side: Graphic/Image -->

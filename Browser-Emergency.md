@@ -4,11 +4,12 @@ tags: [debug, auto-heal, chopper, browser]
 ---
 # 🚨 Emergencia en el Navegador
 
-**Tipo:** Console Error
+**Tipo:** Page Exception
 
 ## 🩸 Diagnóstico:
 ```text
-[nuxt] error caught during app initialization H3Error: Failed to fetch dynamically imported module: http://localhost:3000/_nuxt/pages/index.vue
+Failed to fetch dynamically imported module: http://localhost:3000/_nuxt/node_modules/nuxt/dist/app/entry.js?t=1779561336243&v=8060736d
+
 ```
 
 ## 📸 Evidencia Visual:
