@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { animate, stagger } from 'animejs'
+
 definePageMeta({ layout: 'admin', middleware: ['admin'] })
 
 type AdminCard = {
@@ -8,7 +11,7 @@ type AdminCard = {
   to: string
   badge: {
     text: string
-    className: string
+    color: string
   }
 }
 
@@ -20,57 +23,41 @@ type AdminSection = {
 
 const sections: AdminSection[] = [
   {
-    title: 'Operacion',
+    title: 'Operación Principal',
     icon: 'i-heroicons-film',
     cards: [
       {
         title: 'Cartelera',
-        description: 'Peliculas, sinopsis, duracion y edades.',
+        description: 'Películas, sinopsis, duración y edades.',
         icon: 'i-heroicons-video-camera',
         to: '/admin/movies',
-        badge: {
-          text: 'En sala',
-          className:
-            'text-[11px] leading-none font-semibold uppercase tracking-wide text-primary bg-primary/10 px-2.5 py-1 rounded-md',
-        },
+        badge: { text: 'En sala', color: 'primary' },
       },
       {
         title: 'Funciones',
         description: 'Horarios, mesas y reservas activas.',
         icon: 'i-heroicons-clock',
         to: '/admin/showtimes',
-        badge: {
-          text: 'En vivo',
-          className:
-            'text-[11px] leading-none font-semibold uppercase tracking-wide text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2.5 py-1 rounded-md',
-        },
+        badge: { text: 'En vivo', color: 'green' },
       },
       {
         title: 'Escáner QR',
         description: 'Validación y check-in de reservas.',
         icon: 'i-heroicons-qr-code',
         to: '/admin/reservations/scan',
-        badge: {
-          text: 'Nuevo',
-          className:
-            'text-[11px] leading-none font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 px-2.5 py-1 rounded-md',
-        },
+        badge: { text: 'Nuevo', color: 'emerald' },
       },
       {
-        title: 'KPI',
-        description: 'Ventas, ocupacion y conversion.',
+        title: 'Métricas (KPI)',
+        description: 'Ventas, ocupación y conversión.',
         icon: 'i-heroicons-chart-bar',
         to: '/admin/kpi',
-        badge: {
-          text: 'Ver',
-          className:
-            'text-[11px] leading-none font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 bg-gray-200/60 dark:bg-gray-800/60 px-2.5 py-1 rounded-md',
-        },
+        badge: { text: 'Analítica', color: 'neutral' },
       },
     ],
   },
   {
-    title: 'Cocina & punto de venta',
+    title: 'Cocina & Punto de Venta',
     icon: 'i-heroicons-fire',
     cards: [
       {
@@ -78,153 +65,116 @@ const sections: AdminSection[] = [
         description: 'Stock, costo y alertas de insumos.',
         icon: 'i-heroicons-archive-box',
         to: '/admin/ingredients',
-        badge: {
-          text: 'Bodega',
-          className:
-            'text-[11px] leading-none font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 px-2.5 py-1 rounded-md',
-        },
+        badge: { text: 'Bodega', color: 'amber' },
       },
       {
         title: 'Recetas',
-        description: 'Costeo por porcion y merma.',
+        description: 'Costeo por porción y merma.',
         icon: 'i-heroicons-beaker',
         to: '/admin/recipes',
-        badge: {
-          text: 'Cocina',
-          className:
-            'text-[11px] leading-none font-semibold uppercase tracking-wide text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 px-2.5 py-1 rounded-md',
-        },
+        badge: { text: 'Cocina', color: 'violet' },
       },
       {
-        title: 'Menu',
+        title: 'Menú Público',
         description: 'Productos visibles para el cliente.',
         icon: 'i-heroicons-sparkles',
         to: '/admin/menu',
-        badge: {
-          text: 'Publico',
-          className:
-            'text-[11px] leading-none font-semibold uppercase tracking-wide text-primary bg-primary/10 px-2.5 py-1 rounded-md',
-        },
+        badge: { text: 'App', color: 'primary' },
       },
     ],
   },
 ]
 
-type MotionPreset = {
-  initial: Record<string, any>
-  enter: Record<string, any>
-  hover?: Record<string, any>
-}
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    animate('.admin-header', {
+      opacity: [0, 1],
+      translateY: [-20, 0],
+      duration: 800,
+      ease: 'outQuart'
+    })
 
-const rollBottom = (delay = 0): MotionPreset => ({
-  initial: {
-    opacity: 0,
-    y: 34,
-    rotateX: -50,
-    scale: 0.96,
-    transformOrigin: 'bottom center',
-  },
-  enter: {
-    opacity: 1,
-    y: 0,
-    rotateX: 0,
-    scale: 1,
-    transition: {
-      delay,
-      type: 'spring',
-      stiffness: 210,
-      damping: 20,
-      mass: 0.9,
-    },
-  },
+    animate('.admin-section', {
+      opacity: [0, 1],
+      translateY: [20, 0],
+      duration: 800,
+      delay: stagger(150),
+      ease: 'outQuart'
+    })
+
+    animate('.admin-card', {
+      opacity: [0, 1],
+      scale: [0.95, 1],
+      translateY: [20, 0],
+      duration: 600,
+      delay: stagger(50, { start: 300 }),
+      ease: 'outBack'
+    })
+  }
 })
-
-const withHoverLift = (preset: MotionPreset): MotionPreset => ({
-  ...preset,
-  hover: {
-    scale: 1.02,
-    rotateX: -1.4,
-    rotateY: 1.4,
-    transition: {
-      type: 'spring',
-      stiffness: 250,
-      damping: 18,
-    },
-  },
-})
-
-const headerMotion = rollBottom(0.05)
-const sectionHeaderMotion = (index: number) => rollBottom(0.08 + index * 0.04)
-const cardMotion = (index: number) => withHoverLift(rollBottom(0.12 + index * 0.05))
 </script>
 
 <template>
-  <UContainer class="py-8 space-y-8">
-    <Motion tag="header" class="space-y-1" v-bind="headerMotion">
-      <h1 class="text-2xl font-bold flex items-center gap-2">
-        <UIcon name="i-heroicons-cog-8-tooth" class="text-primary text-2xl" />
-        Panel administrativo
+  <UContainer class="py-8 space-y-12">
+    <!-- Header -->
+    <header class="admin-header opacity-0 space-y-2 pb-6 border-b border-border/50">
+      <h1 class="text-3xl font-bold flex items-center gap-3 text-foreground tracking-tight">
+        <UIcon name="i-heroicons-squares-2x2" class="text-primary w-8 h-8" />
+        Panel Administrativo
       </h1>
-      <p class="text-sm text-muted">
-        Control de peliculas, funciones, inventario y ventas.
+      <p class="text-base text-muted-foreground max-w-2xl">
+        Centro de control para operaciones de cine, inventario y métricas en tiempo real.
       </p>
-    </Motion>
+    </header>
 
-    <section
-      v-for="(section, sectionIndex) in sections"
-      :key="section.title"
-      class="space-y-4"
-    >
-      <Motion
-        tag="div"
-        class="flex items-center gap-2"
-        v-bind="sectionHeaderMotion(sectionIndex)"
+    <!-- Sections -->
+    <div class="space-y-10">
+      <section
+        v-for="section in sections"
+        :key="section.title"
+        class="admin-section opacity-0 space-y-5"
       >
-        <UIcon :name="section.icon" class="text-primary text-xl" />
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-muted">
-          {{ section.title }}
-        </h2>
-      </Motion>
+        <div class="flex items-center gap-2">
+          <UIcon :name="section.icon" class="text-primary text-xl" />
+          <h2 class="text-sm font-bold uppercase tracking-wider text-foreground">
+            {{ section.title }}
+          </h2>
+        </div>
 
-      <div class="grid gap-4 md:grid-cols-3">
-        <NuxtLink
-          v-for="(card, cardIndex) in section.cards"
-          :key="card.title"
-          :to="card.to"
-          class="block"
-        >
-          <Motion
-            tag="div"
-            class="h-full"
-            v-bind="cardMotion(sectionIndex * 10 + cardIndex)"
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <NuxtLink
+            v-for="card in section.cards"
+            :key="card.title"
+            :to="card.to"
+            class="block h-full group"
           >
             <UCard
-              class="group rounded-2xl border border-default/60 cursor-pointer transition hover:bg-primary/5 hover:ring-1 hover:ring-primary/30 h-full"
+              class="admin-card opacity-0 h-full rounded-2xl border border-border/60 bg-background transition-all duration-300 hover:shadow-lg hover:border-primary/40 group-hover:-translate-y-1"
+              :ui="{ body: { padding: 'p-5' } }"
             >
-              <div class="flex items-start justify-between h-full">
-                <div class="flex items-start gap-3">
-                  <UIcon
-                    :name="card.icon"
-                    class="text-primary text-2xl shrink-0"
-                  />
-                  <div class="space-y-1">
-                    <div class="font-semibold text-base leading-tight text-gray-800 dark:text-gray-100">
-                      {{ card.title }}
-                    </div>
-                    <p class="text-xs text-muted leading-snug">
-                      {{ card.description }}
-                    </p>
+              <div class="flex flex-col h-full gap-4">
+                <div class="flex items-start justify-between">
+                  <div class="p-2.5 bg-primary/10 rounded-xl text-primary group-hover:scale-110 transition-transform duration-300">
+                    <UIcon :name="card.icon" class="w-6 h-6" />
                   </div>
+                  <UBadge :color="card.badge.color as any" variant="subtle" size="sm" class="uppercase text-[10px] tracking-widest font-bold">
+                    {{ card.badge.text }}
+                  </UBadge>
                 </div>
-
-                <span :class="card.badge.className">
-                  {{ card.badge.text }}
-                </span>
+                
+                <div class="space-y-1.5 mt-auto">
+                  <h3 class="font-bold text-lg leading-tight text-foreground group-hover:text-primary transition-colors">
+                    {{ card.title }}
+                  </h3>
+                  <p class="text-sm text-muted-foreground leading-snug">
+                    {{ card.description }}
+                  </p>
+                </div>
               </div>
             </UCard>
-          </Motion>
-        </NuxtLink>
-      </div>
-    </section>
+          </NuxtLink>
+        </div>
+      </section>
+    </div>
   </UContainer>
 </template>
