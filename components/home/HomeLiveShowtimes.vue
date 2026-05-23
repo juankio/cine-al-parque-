@@ -1,8 +1,8 @@
 <template>
-  <section class="space-y-6">
+  <section class="space-y-8">
     <div class="flex items-center justify-between">
-      <h2 class="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-        <UIcon name="i-heroicons-bolt" class="text-primary" /> En vivo hoy
+      <h2 class="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
+        <UIcon name="i-heroicons-bolt" class="text-primary w-8 h-8" /> En vivo hoy
       </h2>
       <UButton
         v-if="hasSections"
@@ -11,67 +11,76 @@
         color="neutral"
         :loading="props.loading"
         @click="emit('refresh')"
+        class="hover:bg-primary/10 hover:text-primary transition-colors font-medium"
       >
         Actualizar
       </UButton>
     </div>
 
-    <div v-if="props.loading" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-if="props.loading" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       <div v-for="i in 6" :key="i" class="animate-pulse">
-        <USkeleton class="h-28 w-full rounded-xl" />
+        <USkeleton class="h-32 w-full rounded-2xl" />
       </div>
     </div>
 
-    <UAlert
+    <EmptyState
       v-else-if="props.error"
-      color="error"
-      variant="soft"
-      icon="i-heroicons-exclamation-triangle"
+      is-error
+      title="Estado del Sistema: Fuera de Línea"
       :description="props.error"
-      title="No se pudieron cargar las funciones"
-    />
+    >
+      <template #actions>
+        <UButton color="primary" variant="soft" icon="i-heroicons-arrow-path" @click="emit('refresh')">Reintentar conexión</UButton>
+      </template>
+    </EmptyState>
 
-    <div v-else-if="hasSections" class="space-y-8">
+    <div v-else-if="hasSections" class="space-y-10">
       <div
         v-for="section in props.sections"
         :key="section.id"
-        class="space-y-4"
+        class="space-y-5"
       >
-        <h3 class="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{{ section.label }}</h3>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="flex items-center gap-3">
+          <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">{{ section.label }}</h3>
+          <div class="h-px flex-1 bg-border/50"></div>
+        </div>
+        <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <UCard
             v-for="s in section.items"
             :key="s._id"
-            class="live-card h-full rounded-xl border border-border bg-background transition-all hover:shadow-md hover:border-primary/50 opacity-0"
-            :ui="{ body: { padding: 'p-4' } }"
+            class="live-card h-full rounded-2xl border border-border/50 bg-background/50 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:border-primary/40 opacity-0 group"
+            :ui="{ body: { padding: 'p-5' } }"
           >
-            <div class="flex gap-4 items-start">
-              <img :src="s.poster || '/favicon.ico'" class="w-20 h-28 object-cover rounded-lg border border-border" />
-              <div class="flex flex-col flex-1 h-full min-w-0">
-                <div class="font-medium text-base truncate">{{ s.titulo || 'Sin título' }}</div>
-                <div class="text-sm text-muted-foreground mt-1 space-y-0.5">
-                  <div class="flex items-center gap-1">
-                    <UIcon name="i-heroicons-clock" class="w-3.5 h-3.5" />
+            <div class="flex gap-5 items-start">
+              <div class="relative w-24 h-32 shrink-0 rounded-xl border border-border/50 overflow-hidden bg-muted group-hover:shadow-lg transition-all duration-500">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <img :src="s.poster || '/favicon.ico'" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+              </div>
+              <div class="flex flex-col flex-1 h-full min-w-0 py-1">
+                <div class="font-bold text-lg leading-tight truncate group-hover:text-primary transition-colors">{{ s.titulo || 'Sin título' }}</div>
+                <div class="text-sm text-muted-foreground mt-2 space-y-1.5 font-medium">
+                  <div class="flex items-center gap-2">
+                    <UIcon name="i-heroicons-clock" class="w-4 h-4 opacity-70" />
                     {{ fmtTime(s.fechaHora) }}
                   </div>
-                  <div class="flex items-center gap-1">
-                    <UIcon name="i-heroicons-map-pin" class="w-3.5 h-3.5" />
+                  <div class="flex items-center gap-2">
+                    <UIcon name="i-heroicons-map-pin" class="w-4 h-4 opacity-70" />
                     Sala {{ s.sala || '-' }}
                   </div>
-                  <div class="flex items-center gap-1 font-medium text-primary">
-                    <UIcon name="i-heroicons-banknotes" class="w-3.5 h-3.5" />
+                  <div class="flex items-center gap-2 text-primary font-bold">
+                    <UIcon name="i-heroicons-banknotes" class="w-4 h-4" />
                     $ {{ money(s.price) }}
                   </div>
                 </div>
-                <div class="mt-auto pt-3">
+                <div class="mt-auto pt-4">
                   <UButton
                     :to="`/showtimes/${s._id}`"
-                    class="w-full justify-center"
-                    size="sm"
+                    class="w-full justify-center rounded-xl font-bold tracking-wide"
+                    size="md"
                     color="primary"
                     variant="soft"
                   >
-                    Reservar
+                    Reservar ahora
                   </UButton>
                 </div>
               </div>
@@ -81,12 +90,12 @@
       </div>
     </div>
 
-    <EmptyState v-else description="No hay funciones próximas en las próximas 48 horas." />
+    <EmptyState v-else description="No hay funciones programadas en las próximas 48 horas." />
   </section>
 </template>
 
 <script setup lang="ts">
-import { animate, createTimeline, stagger, random } from 'animejs';
+import { animate, stagger } from 'animejs'
 import { onMounted, watch, computed } from 'vue'
 
 const props = defineProps<{
@@ -115,13 +124,13 @@ const money = (val?: number) => {
 const animateShowtimes = () => {
   if (isClient) {
     animate('.live-card', {
-        opacity: [0, 1],
-        translateX: [-20, 0],
-        duration: 600,
-        delay: stagger(100),
-        ease: 'outQuart'
-      })
-    }
+      opacity: [0, 1],
+      translateX: [-20, 0],
+      duration: 800,
+      delay: stagger(100),
+      ease: 'outQuart'
+    })
+  }
 }
 
 onMounted(() => {
@@ -132,4 +141,3 @@ watch(() => props.loading, (n) => {
   if (!n && props.sections.length) setTimeout(animateShowtimes, 50)
 })
 </script>
-
