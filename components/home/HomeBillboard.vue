@@ -1,5 +1,5 @@
 <template>
-  <section ref="sectionRef" class="space-y-8 relative">
+  <section ref="sectionRef" class="space-y-8 relative w-full px-4 sm:px-6 lg:px-8 max-w-[1800px] mx-auto">
     <div class="flex items-center justify-between border-b border-border/50 pb-5">
       <h2 class="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
         <UIcon name="i-heroicons-film" class="text-primary w-8 h-8" />
@@ -7,13 +7,9 @@
       </h2>
     </div>
 
-    <div v-if="props.loading" class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <div v-for="i in 8" :key="i" class="animate-pulse flex flex-col gap-4">
+    <div v-if="props.loading" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      <div v-for="i in 10" :key="i" class="animate-pulse flex flex-col gap-4">
         <USkeleton class="aspect-[2/3] w-full rounded-2xl" />
-        <div class="space-y-3 px-1">
-          <USkeleton class="h-6 w-3/4 rounded-md" />
-          <USkeleton class="h-4 w-1/2 rounded-md" />
-        </div>
       </div>
     </div>
 
@@ -28,59 +24,39 @@
       </template>
     </EmptyState>
 
-    <div v-else-if="props.filtered.length" class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <div
+    <div v-else-if="props.filtered.length" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      <NuxtLink
         v-for="(m, idx) in props.filtered"
         :key="m.id"
-        class="billboard-card relative group flex flex-col h-full rounded-2xl bg-background/50 backdrop-blur-sm border border-border/40 hover:border-primary/40 transition-all duration-500 overflow-hidden shadow-sm hover:shadow-xl opacity-0"
+        :to="props.upcomingShowtimes(m.id, 1).length ? `/showtimes/${props.upcomingShowtimes(m.id, 1)[0].id}` : '#'"
+        class="billboard-card block relative group w-full aspect-[2/3] rounded-2xl overflow-hidden bg-black shadow-lg hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500 opacity-0 transform-gpu cursor-pointer"
       >
-        <!-- Poster container -->
-        <div class="aspect-[2/3] w-full overflow-hidden relative bg-muted">
-          <div class="absolute inset-0 bg-gradient-to-t from-background/95 via-background/20 to-transparent z-10 opacity-70 group-hover:opacity-90 transition-opacity duration-500"></div>
-          <img :src="m.poster || '/favicon.ico'" class="h-full w-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110" loading="lazy" />
-          
-          <!-- Floating badge -->
-          <div class="absolute top-4 right-4 z-20">
-            <span class="inline-flex items-center px-3 py-1.5 rounded-xl text-xs font-black tracking-widest uppercase bg-background/80 backdrop-blur-md text-foreground shadow-lg border border-border/50">
-              {{ m.clasificacion || 'T.P' }}
-            </span>
-          </div>
+        <!-- Full Poster Background -->
+        <img :src="m.poster || '/favicon.ico'" class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 ease-out group-hover:scale-110 opacity-90 group-hover:opacity-100" loading="lazy" />
+        
+        <!-- Heavy Gradient for Text Legibility -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent opacity-50"></div>
+        
+        <!-- Floating badge Top Right -->
+        <div class="absolute top-4 right-4 z-20">
+          <span class="inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest uppercase bg-black/60 backdrop-blur-md text-white shadow-lg border border-white/10">
+            {{ m.clasificacion || 'T.P' }}
+          </span>
         </div>
 
-        <!-- Content -->
-        <div class="p-6 flex flex-col flex-1 space-y-5 relative z-20 -mt-20">
-          <div class="space-y-3">
-            <h3 class="font-black text-2xl leading-tight line-clamp-2 text-foreground group-hover:text-primary transition-colors drop-shadow-md">{{ m.titulo }}</h3>
-            <div class="flex items-center gap-2 text-sm text-muted-foreground font-bold tracking-wide">
-              <UIcon name="i-heroicons-clock" class="w-5 h-5 opacity-70" />
+        <!-- Content Bottom -->
+        <div class="absolute inset-x-0 bottom-0 p-6 flex flex-col space-y-3 z-20 translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+          <div class="space-y-1">
+            <h3 class="font-black text-2xl leading-tight text-white drop-shadow-lg break-words">{{ m.titulo }}</h3>
+            <div class="flex items-center gap-2 text-xs text-white/70 font-bold tracking-widest uppercase">
               <span>{{ m.duracion ? `${m.duracion} min` : 'Sin duración' }}</span>
-            </div>
-          </div>
-
-          <!-- Showtimes -->
-          <div class="pt-4 mt-auto flex flex-col gap-4 border-t border-border/40">
-            <p class="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Próximas funciones</p>
-            <div class="flex flex-wrap gap-2.5">
-              <template v-if="props.upcomingShowtimes(m.id, 3).length">
-                <UButton
-                  v-for="s in props.upcomingShowtimes(m.id, 3)"
-                  :key="s.id"
-                  size="sm"
-                  variant="soft"
-                  color="primary"
-                  :to="`/showtimes/${s.id}`"
-                  class="font-bold tracking-wide rounded-xl px-4 py-2 hover:bg-primary hover:text-white transition-all shadow-sm"
-                >
-                  {{ fmtTime(s.fechaHora) }}
-                </UButton>
-              </template>
-              <span v-else class="text-sm text-muted-foreground font-medium flex items-center gap-2 bg-muted/50 px-3 py-2 rounded-xl w-full border border-border/50">
-                <UIcon name="i-heroicons-calendar" class="w-5 h-5" /> Sin funciones hoy
-              </span>
+              <span v-if="props.upcomingShowtimes(m.id, 1).length" class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse ml-2"></span>
+              <span v-if="props.upcomingShowtimes(m.id, 1).length" class="text-primary">{{ fmtTime(props.upcomingShowtimes(m.id, 1)[0].fechaHora) }}</span>
             </div>
           </div>
         </div>
-      </div>
+      </NuxtLink>
     </div>
 
     <EmptyState v-else description="No hay películas que coincidan con tu búsqueda. Intenta con otro término." class="my-12" />
@@ -111,8 +87,9 @@ const animateGrid = () => {
     animate('.billboard-card', {
       opacity: [0, 1],
       translateY: [40, 0],
+      scale: [0.95, 1],
       duration: 800,
-      delay: stagger(100),
+      delay: stagger(50),
       ease: 'outQuart'
     })
   }

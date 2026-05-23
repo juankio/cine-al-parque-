@@ -8,7 +8,7 @@ tags: [debug, auto-heal, chopper, browser]
 
 ## 🩸 Diagnóstico:
 ```text
-Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES
+[nuxt] error caught during app initialization H3Error: Failed to fetch dynamically imported module: http://localhost:3000/_nuxt/pages/index.vue
 ```
 
 ## 📸 Evidencia Visual:

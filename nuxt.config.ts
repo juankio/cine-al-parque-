@@ -34,13 +34,14 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'Cine al Parque',
-      meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }]
+      meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
+      link: [{ rel: 'icon', type: 'image/svg+xml', href: `data:image/svg+xml,${svgIcon}` }]
     }
   },
 
   colorMode: {
     preference: 'system',
-    fallback: 'light',
+    fallback: 'dark',
     classSuffix: '' // ← pone la clase 'dark' en <html>
   },
   components: [

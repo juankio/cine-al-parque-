@@ -21,7 +21,7 @@ const heroPerks = [
   'Recibe métricas y alertas en vivo.',
 ]
 
-const labelUi = { label: 'text-foreground font-medium' }
+const labelUi = { label: 'text-white font-medium' }
 
 const fields: AuthFormField[] = [
   {
@@ -101,7 +101,6 @@ onMounted(() => {
     if (hint) formState.email = hint
   } catch {}
 
-  // Anime.js Entrance Animation
   if (typeof window !== 'undefined') {
     animate('.anim-left', {
       opacity: [0, 1],
@@ -145,21 +144,24 @@ const onSubmit = async (payload: FormSubmitEvent<Schema>) => {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-muted/30 p-4 sm:p-6 lg:p-8">
-    <UCard class="w-full max-w-5xl overflow-hidden rounded-[2rem] shadow-2xl border border-border/50 bg-background" :ui="{ body: { padding: 'p-0 sm:p-0' } }">
-      <div class="grid grid-cols-1 md:grid-cols-2 min-h-[600px]">
+  <div class="min-h-screen flex items-center justify-center bg-[#020202] p-4 sm:p-6 lg:p-8 overflow-hidden relative">
+    <!-- Ambient Light -->
+    <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-primary/20 blur-[150px] rounded-full pointer-events-none mix-blend-screen"></div>
+
+    <div class="w-full max-w-[1200px] overflow-hidden rounded-[2.5rem] shadow-2xl border border-white/5 bg-[#0a0a0a]/80 backdrop-blur-2xl">
+      <div class="grid grid-cols-1 lg:grid-cols-2 min-h-[700px]">
         <!-- Left Side: Form -->
-        <div class="flex flex-col justify-center p-8 md:p-12 lg:p-16">
-          <div class="w-full max-w-md mx-auto space-y-8">
-            <div class="space-y-2 anim-left opacity-0 text-center md:text-left">
-              <NuxtLink to="/" class="inline-flex items-center gap-2 text-primary font-bold tracking-tight mb-4 hover:opacity-80 transition-opacity">
-                <UIcon name="i-heroicons-film" class="w-6 h-6" />
+        <div class="flex flex-col justify-center p-8 md:p-16 relative z-10">
+          <div class="w-full max-w-md mx-auto space-y-10">
+            <div class="space-y-4 anim-left opacity-0 text-center lg:text-left">
+              <NuxtLink to="/" class="inline-flex items-center gap-2 text-primary font-black tracking-widest uppercase text-sm mb-6 hover:opacity-80 transition-opacity">
+                <UIcon name="i-heroicons-ticket-solid" class="w-5 h-5" />
                 Cine al Parque
               </NuxtLink>
-              <h1 class="text-3xl font-bold tracking-tight text-foreground">
+              <h1 class="text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
                 Bienvenido de vuelta
               </h1>
-              <p class="text-muted-foreground text-sm">
+              <p class="text-white/60 text-base font-medium">
                 Ingresa tus credenciales corporativas para continuar.
               </p>
             </div>
@@ -170,7 +172,7 @@ const onSubmit = async (payload: FormSubmitEvent<Schema>) => {
                 :fields="fields"
                 :state="formState"
                 :loading="loading"
-                :submit-button="{ label: 'Entrar al panel', color: 'primary', size: 'lg', class: 'w-full rounded-xl font-semibold mt-2', trailingIcon: 'i-heroicons-arrow-right' }"
+                :submit-button="{ label: 'Entrar al panel', color: 'primary', size: 'xl', class: 'w-full rounded-2xl font-black tracking-widest uppercase mt-4 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform', trailingIcon: 'i-heroicons-arrow-right' }"
                 @submit="onSubmit"
               >
                 <template #validation>
@@ -180,14 +182,14 @@ const onSubmit = async (payload: FormSubmitEvent<Schema>) => {
                     variant="soft"
                     icon="i-heroicons-exclamation-triangle"
                     :description="errMsg"
-                    class="mb-4"
+                    class="mb-6 rounded-xl border border-error/20"
                   />
                 </template>
               </UAuthForm>
 
-              <div class="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <div class="flex items-center justify-center lg:justify-start gap-2 text-sm text-white/60 font-medium pt-4">
                 ¿No tienes cuenta?
-                <NuxtLink to="/register" class="font-medium text-primary hover:underline underline-offset-4">
+                <NuxtLink to="/register" class="font-bold text-white hover:text-primary transition-colors">
                   Regístrate
                 </NuxtLink>
               </div>
@@ -196,38 +198,28 @@ const onSubmit = async (payload: FormSubmitEvent<Schema>) => {
         </div>
 
         <!-- Right Side: Graphic/Image -->
-        <div class="hidden md:flex relative bg-primary/5 border-l border-border/50 items-center justify-center overflow-hidden p-12">
-          <!-- Abstract SVG Background -->
-          <div class="absolute inset-0 opacity-20 dark:opacity-10 text-primary pointer-events-none">
-            <svg class="absolute w-full h-full" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.2"/>
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-            </svg>
-          </div>
+        <div class="hidden lg:flex relative bg-black items-center justify-center overflow-hidden">
+          <img src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=1200&auto=format&fit=crop" class="absolute inset-0 w-full h-full object-cover opacity-30 grayscale-[30%] mix-blend-lighten" />
+          
+          <div class="absolute inset-0 bg-gradient-to-r from-[#0a0a0a]/90 to-transparent z-10"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent z-10"></div>
 
-          <div class="absolute top-1/4 -right-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px] mix-blend-screen" />
-          <div class="absolute bottom-1/4 -left-1/4 w-96 h-96 bg-secondary/20 rounded-full blur-[120px] mix-blend-screen" />
-
-          <div class="relative z-10 space-y-8 max-w-sm anim-right opacity-0">
+          <div class="relative z-20 space-y-8 max-w-md p-16 anim-right opacity-0 mr-auto">
             <div class="space-y-4">
-              <div class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-                <UIcon name="i-heroicons-sparkles" class="w-3.5 h-3.5" /> Nuevo Dashboard
+              <div class="inline-flex items-center gap-1.5 rounded-full bg-primary/20 border border-primary/30 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary shadow-lg">
+                <UIcon name="i-heroicons-sparkles-solid" class="w-3.5 h-3.5" /> Nuevo Dashboard
               </div>
-              <h2 class="text-3xl font-bold leading-tight">
+              <h2 class="text-4xl font-black leading-tight text-white drop-shadow-md">
                 Gestiona tus funciones sin fricción
               </h2>
-              <p class="text-muted-foreground text-sm">
+              <p class="text-white/70 text-base font-medium leading-relaxed">
                 Coordina la operación diaria, habilita funciones y monitorea métricas en un tablero único optimizado para la velocidad.
               </p>
             </div>
 
-            <ul class="space-y-4">
-              <li v-for="(perk, idx) in heroPerks" :key="idx" class="flex items-center gap-3 text-sm font-medium text-foreground">
-                <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <ul class="space-y-5">
+              <li v-for="(perk, idx) in heroPerks" :key="idx" class="flex items-center gap-4 text-sm font-bold text-white">
+                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md border border-white/20">
                   <UIcon name="i-heroicons-check" class="h-4 w-4" />
                 </div>
                 {{ perk }}
@@ -236,6 +228,6 @@ const onSubmit = async (payload: FormSubmitEvent<Schema>) => {
           </div>
         </div>
       </div>
-    </UCard>
+    </div>
   </div>
 </template>

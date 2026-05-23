@@ -4,8 +4,6 @@ import { useAuth } from '~/composables/useAuth'
 import { onMounted, ref, computed, watch } from 'vue'
 
 const route = useRoute()
-const colorMode = useColorMode()
-const isDark = computed(() => colorMode.value === 'dark')
 
 const { user, logout, fetchMe } = useAuth()
 const me = computed(() => user.value ?? null)
@@ -32,14 +30,10 @@ onMounted(() => {
   }
 })
 
-const toggleTheme = () => {
-  colorMode.preference = isDark.value ? 'light' : 'dark'
-}
-
 const baseItems = computed(() => [
   { label: 'Inicio', icon: 'i-heroicons-home', to: '/' },
   { label: 'Reservas', icon: 'i-heroicons-ticket', to: '/reservations' },
-  { label: 'Combos', icon: 'i-heroicons-sparkles', to: '/menu' },
+  { label: 'Combos', icon: 'i-heroicons-shopping-bag', to: '/menu' },
 ])
 
 const navItems = computed(() => {
@@ -65,15 +59,15 @@ watch(isMenuOpen, (newVal) => {
 <template>
   <header 
     class="fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 border-b"
-    :class="scrolled ? 'bg-[#0a0a0a]/80 backdrop-blur-xl border-white/10 shadow-lg' : 'bg-transparent border-transparent'"
+    :class="scrolled ? 'bg-[#020202]/80 backdrop-blur-xl border-white/10 shadow-lg' : 'bg-transparent border-transparent'"
   >
-    <div class="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
+    <div class="mx-auto flex h-20 max-w-[1800px] items-center justify-between px-6 lg:px-8">
       <div class="flex items-center gap-8">
         <NuxtLink to="/" class="flex items-center gap-3 transition-opacity hover:opacity-80 group">
           <div class="p-2 rounded-xl bg-gradient-to-br from-primary to-rose-500 shadow-lg group-hover:shadow-primary/30 transition-shadow">
-            <UIcon name="i-heroicons-film-solid" class="w-5 h-5 text-white" />
+            <UIcon name="i-heroicons-ticket-solid" class="w-5 h-5 text-white" />
           </div>
-          <span class="text-lg font-bold tracking-tight text-white">Cine al Parque</span>
+          <span class="text-lg font-bold tracking-tight text-white drop-shadow-md">Cine al Parque</span>
         </NuxtLink>
 
         <!-- Desktop Nav -->
@@ -94,15 +88,7 @@ watch(isMenuOpen, (newVal) => {
       </div>
 
       <div class="flex items-center gap-3">
-        <!-- Optional Theme Toggle -->
-        <UButton
-          variant="ghost"
-          color="neutral"
-          :icon="isDark ? 'i-heroicons-moon-solid' : 'i-heroicons-sun-solid'"
-          aria-label="Toggle theme"
-          class="text-white/70 hover:text-white hover:bg-white/10"
-          @click="toggleTheme"
-        />
+        <!-- Quitamos Theme Toggle para forzar oscuro inmersivo -->
 
         <div class="hidden md:flex items-center gap-3">
           <template v-if="me">
@@ -135,7 +121,7 @@ watch(isMenuOpen, (newVal) => {
     </div>
 
     <!-- Mobile Menu -->
-    <div v-show="isMenuOpen" ref="menuRef" class="md:hidden border-b border-white/10 bg-[#0a0a0a]/95 backdrop-blur-2xl absolute w-full left-0 top-full">
+    <div v-show="isMenuOpen" ref="menuRef" class="md:hidden border-b border-white/10 bg-[#020202]/95 backdrop-blur-3xl absolute w-full left-0 top-full">
       <div class="space-y-2 px-6 pb-6 pt-4">
         <UButton
           v-for="item in navItems"
