@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { animate, createTimeline, stagger, random } from 'animejs';
-import type { NavigationMenuItem } from '@nuxt/ui'
+import { animate } from 'animejs';
 import { useAuth } from '~/composables/useAuth'
 import { onMounted, ref, computed, watch } from 'vue'
 
@@ -12,22 +11,25 @@ const { user, logout, fetchMe } = useAuth()
 const me = computed(() => user.value ?? null)
 
 const isClient = typeof window !== 'undefined'
-const navMenuRef = ref<HTMLElement | null>(null)
 const isMenuOpen = ref(false)
 const menuRef = ref<HTMLElement | null>(null)
+const scrolled = ref(false)
 
 onMounted(() => {
   if (!user.value) fetchMe().catch(() => {})
   
-  // Navbar entry animation
   if (isClient) {
     animate('header', {
         translateY: [-50, 0],
         opacity: [0, 1],
         ease: 'outExpo',
         duration: 800,
-      })
-    }
+    })
+
+    window.addEventListener('scroll', () => {
+      scrolled.value = window.scrollY > 50
+    })
+  }
 })
 
 const toggleTheme = () => {
@@ -61,16 +63,21 @@ watch(isMenuOpen, (newVal) => {
 </script>
 
 <template>
-  <header class="sticky top-0 z-50 w-full border-b border-[var(--ui-border)] bg-background/80 backdrop-blur-md">
-    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center gap-6">
-        <NuxtLink to="/" class="flex items-center gap-2 transition-opacity hover:opacity-80">
-          <UAvatar icon="i-heroicons-film-solid" size="sm" class="bg-primary text-white" />
-          <span class="text-sm font-semibold tracking-tight">Cine al Parque</span>
+  <header 
+    class="fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 border-b"
+    :class="scrolled ? 'bg-[#0a0a0a]/80 backdrop-blur-xl border-white/10 shadow-lg' : 'bg-transparent border-transparent'"
+  >
+    <div class="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
+      <div class="flex items-center gap-8">
+        <NuxtLink to="/" class="flex items-center gap-3 transition-opacity hover:opacity-80 group">
+          <div class="p-2 rounded-xl bg-gradient-to-br from-primary to-rose-500 shadow-lg group-hover:shadow-primary/30 transition-shadow">
+            <UIcon name="i-heroicons-film-solid" class="w-5 h-5 text-white" />
+          </div>
+          <span class="text-lg font-bold tracking-tight text-white">Cine al Parque</span>
         </NuxtLink>
 
         <!-- Desktop Nav -->
-        <nav class="hidden md:flex items-center gap-1">
+        <nav class="hidden md:flex items-center gap-2">
           <UButton
             v-for="item in navItems"
             :key="item.to"
@@ -78,43 +85,47 @@ watch(isMenuOpen, (newVal) => {
             variant="ghost"
             color="neutral"
             :icon="item.icon"
-            class="text-sm font-medium transition-colors"
-            :class="[route.path === item.to || (item.to !== '/' && route.path.startsWith(item.to)) ? 'bg-[var(--ui-bg-elevated)] text-[var(--ui-text-highlighted)]' : '']"
+            class="text-sm font-semibold tracking-wide transition-all px-4 py-2 hover:bg-white/10 hover:text-white"
+            :class="[route.path === item.to || (item.to !== '/' && route.path.startsWith(item.to)) ? 'bg-white/10 text-white shadow-inner border border-white/5' : 'text-white/60']"
           >
             {{ item.label }}
           </UButton>
         </nav>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
+        <!-- Optional Theme Toggle -->
         <UButton
           variant="ghost"
           color="neutral"
           :icon="isDark ? 'i-heroicons-moon-solid' : 'i-heroicons-sun-solid'"
           aria-label="Toggle theme"
+          class="text-white/70 hover:text-white hover:bg-white/10"
           @click="toggleTheme"
         />
 
-        <div class="hidden md:flex items-center gap-2">
+        <div class="hidden md:flex items-center gap-3">
           <template v-if="me">
-            <UButton to="/me" variant="soft" color="neutral" class="rounded-full pl-1 pr-3">
+            <UButton to="/me" variant="soft" color="neutral" class="rounded-full pl-1.5 pr-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all">
               <template #leading>
-                <UAvatar :alt="me.name" size="xs" class="bg-primary/10 text-primary">
+                <UAvatar :alt="me.name" size="sm" class="bg-primary text-white shadow-inner font-bold">
                   {{ me.name?.[0]?.toUpperCase() || 'U' }}
                 </UAvatar>
               </template>
-              <span class="text-sm font-medium max-w-[120px] truncate">{{ me.name }}</span>
+              <span class="text-sm font-semibold max-w-[120px] truncate">{{ me.name }}</span>
             </UButton>
-            <UButton icon="i-heroicons-arrow-right-start-on-rectangle" variant="ghost" color="neutral" @click="logout" />
+            <UButton icon="i-heroicons-arrow-right-start-on-rectangle" variant="ghost" color="neutral" class="text-white/70 hover:text-error hover:bg-error/10" @click="logout" />
           </template>
           <template v-else>
-            <UButton to="/login" color="primary" variant="solid" class="shadow-sm">Entrar</UButton>
+            <UButton to="/login" color="primary" variant="solid" class="shadow-lg shadow-primary/20 font-bold px-6 py-2 rounded-full uppercase tracking-widest text-[10px]">
+              Entrar
+            </UButton>
           </template>
         </div>
 
         <!-- Mobile Menu Toggle -->
         <UButton
-          class="md:hidden"
+          class="md:hidden text-white hover:bg-white/10"
           variant="ghost"
           color="neutral"
           :icon="isMenuOpen ? 'i-heroicons-x-mark' : 'i-heroicons-bars-3'"
@@ -124,8 +135,8 @@ watch(isMenuOpen, (newVal) => {
     </div>
 
     <!-- Mobile Menu -->
-    <div v-show="isMenuOpen" ref="menuRef" class="md:hidden border-b border-[var(--ui-border)] bg-background">
-      <div class="space-y-1 px-4 pb-4 pt-2">
+    <div v-show="isMenuOpen" ref="menuRef" class="md:hidden border-b border-white/10 bg-[#0a0a0a]/95 backdrop-blur-2xl absolute w-full left-0 top-full">
+      <div class="space-y-2 px-6 pb-6 pt-4">
         <UButton
           v-for="item in navItems"
           :key="item.to"
@@ -134,27 +145,27 @@ watch(isMenuOpen, (newVal) => {
           variant="ghost"
           color="neutral"
           :icon="item.icon"
-          class="justify-start"
+          class="justify-start text-white/80 hover:text-white hover:bg-white/5 font-medium py-3"
           @click="isMenuOpen = false"
         >
           {{ item.label }}
         </UButton>
         
-        <div class="my-2 border-t border-[var(--ui-border)]"></div>
+        <div class="my-4 border-t border-white/10"></div>
         
         <template v-if="me">
-          <UButton block to="/me" variant="soft" color="neutral" class="justify-start" @click="isMenuOpen = false">
+          <UButton block to="/me" variant="soft" color="neutral" class="justify-start bg-white/5 text-white hover:bg-white/10 py-3" @click="isMenuOpen = false">
             <template #leading>
-              <UAvatar :alt="me.name" size="xs" />
+              <UAvatar :alt="me.name" size="sm" class="bg-primary text-white" />
             </template>
-            Perfil
+            Mi Perfil
           </UButton>
-          <UButton block variant="ghost" color="error" icon="i-heroicons-arrow-right-start-on-rectangle" class="justify-start mt-1" @click="() => { logout(); isMenuOpen = false; }">
+          <UButton block variant="ghost" color="error" icon="i-heroicons-arrow-right-start-on-rectangle" class="justify-start mt-2 py-3 hover:bg-error/10" @click="() => { logout(); isMenuOpen = false; }">
             Cerrar sesión
           </UButton>
         </template>
         <template v-else>
-          <UButton block to="/login" color="primary" variant="solid" class="justify-center mt-2" @click="isMenuOpen = false">
+          <UButton block to="/login" color="primary" variant="solid" class="justify-center mt-4 py-3 font-bold uppercase tracking-widest text-xs rounded-xl" @click="isMenuOpen = false">
             Entrar
           </UButton>
         </template>

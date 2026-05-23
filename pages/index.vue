@@ -4,6 +4,7 @@ definePageMeta({ ssr: false })
 import { useShowtimes } from '~/composables/useShowtimes'
 import { useMovies } from '~/composables/useMovies'
 import { useCombos } from '~/composables/useCombos'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 
 const q = ref('')
 
@@ -12,7 +13,7 @@ const LIVE_REFRESH_LIMIT = 16
 const LIVE_REFRESH_INTERVAL = 120000
 
 // ===== Cartelera =====
-const { loading: moviesLoading, error: moviesError, movies, fetchMovies, fetchShowtimes, upcomingShowtimes } = useMovies()
+const { loading: moviesLoading, error: moviesError, movies, fetchMovies, upcomingShowtimes } = useMovies()
 const filteredMovies = computed(() => {
   const term = q.value.trim().toLowerCase()
   if (!term) return movies.value || []
@@ -32,7 +33,7 @@ const {
 } = useShowtimes()
 const liveSections = computed(() => [
   { id: 'today', label: 'Hoy', items: liveToday.value },
-  { id: 'tomorrow', label: 'Manana', items: liveTomorrow.value },
+  { id: 'tomorrow', label: 'Mañana', items: liveTomorrow.value },
 ].filter(section => section.items.length))
 
 // ===== Combos =====
@@ -47,12 +48,11 @@ const {
 const handleComboFocus = () => {
   fetchCombos().catch(() => {})
 }
-onMounted(async () => {
-  // Peliculas
-  await fetchMovies()
 
-  // En vivo hoy
-  await fetchUpcoming({ hours: LIVE_REFRESH_HOURS, limit: LIVE_REFRESH_LIMIT })
+onMounted(async () => {
+  await fetchMovies().catch(() => {})
+  await fetchUpcoming({ hours: LIVE_REFRESH_HOURS, limit: LIVE_REFRESH_LIMIT }).catch(() => {})
+  
   startAutoRefresh({
     intervalMs: LIVE_REFRESH_INTERVAL,
     hours: LIVE_REFRESH_HOURS,
@@ -61,31 +61,29 @@ onMounted(async () => {
     onlyOnChange: true,
   })
 
-  // Combos
-  await fetchCombos({ force: true })
+  await fetchCombos({ force: true }).catch(() => {})
 
-  if (process.client) {
+  if (typeof window !== 'undefined') {
     window.addEventListener('focus', handleComboFocus)
   }
 })
+
 onBeforeUnmount(() => {
   stopAutoRefresh()
-  if (process.client) {
+  if (typeof window !== 'undefined') {
     window.removeEventListener('focus', handleComboFocus)
   }
 })
 </script>
 
 <template>
-  <div class="relative min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-primary">
-    <!-- Ambient Light global -->
-    <div class="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-      <div class="absolute -top-[20%] -left-[10%] h-[50%] w-[50%] rounded-full bg-primary/5 blur-[120px] mix-blend-screen"></div>
-    </div>
+  <div class="relative min-h-screen bg-[#0a0a0a] text-foreground selection:bg-primary/30 selection:text-primary pb-24 overflow-hidden">
+    
+    <!-- Hero Full Bleed (De lado a lado sin restricciones) -->
+    <HomeHero v-model="q" />
 
-    <UContainer class="relative z-10 py-10 space-y-16">
-      <HomeHero v-model="q" />
-
+    <!-- Resto del contenido con contenedor -->
+    <UContainer class="relative z-10 -mt-10 space-y-24">
       <template v-if="isSearching">
         <div id="cartelera" class="h-0" aria-hidden="true" />
         <HomeBillboard
@@ -97,6 +95,7 @@ onBeforeUnmount(() => {
       </template>
 
       <template v-else>
+        <!-- En vivo hoy -->
         <HomeLiveShowtimes
           :loading="liveLoading"
           :error="liveError"
@@ -104,6 +103,7 @@ onBeforeUnmount(() => {
           @refresh="fetchUpcoming({ hours: LIVE_REFRESH_HOURS, limit: LIVE_REFRESH_LIMIT })"
         />
 
+        <!-- Combos -->
         <HomeCombos
           :loading="combosLoading"
           :error="combosError"
@@ -113,6 +113,7 @@ onBeforeUnmount(() => {
 
         <div id="cartelera" class="h-0" aria-hidden="true" />
         
+        <!-- Cartelera General -->
         <HomeBillboard
           :loading="moviesLoading"
           :error="moviesError"
