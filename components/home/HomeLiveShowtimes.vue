@@ -86,57 +86,42 @@
 </template>
 
 <script setup lang="ts">
-import type { PublicShowtime } from '~/composables/useShowtimes'
-import { computed, onMounted, watch } from 'vue'
-import anime from 'animejs'
-
-interface LiveSection {
-  id: string
-  label: string
-  items: PublicShowtime[]
-}
+import { onMounted, watch } from 'vue'
 
 const props = defineProps<{
   loading: boolean
   error: string | null
-  sections: LiveSection[]
+  sections: { id: string, label: string, items: any[] }[]
 }>()
 
 const emit = defineEmits<{
-  (event: 'refresh'): void
+  (e: 'refresh'): void
 }>()
 
-const hasSections = computed(() => props.sections.length > 0)
+const isClient = typeof window !== 'undefined'
 
-const animateCards = () => {
-  anime({
-    targets: '.live-card',
-    opacity: [0, 1],
-    translateX: [-15, 0],
-    delay: anime.stagger(80),
-    duration: 600,
-    easing: 'easeOutCubic'
-  })
+const animateShowtimes = () => {
+  if (isClient) {
+    import('animejs').then((module) => {
+      const anime = module.default
+      anime({
+        targets: '.live-card',
+        opacity: [0, 1],
+        translateX: [-20, 0],
+        duration: 600,
+        delay: anime.stagger(100),
+        easing: 'easeOutQuart'
+      })
+    })
+  }
 }
 
 onMounted(() => {
-  if (!props.loading && hasSections.value) {
-    animateCards()
-  }
+  if (!props.loading && props.sections.length) animateShowtimes()
 })
 
-watch(() => props.loading, (newLoading) => {
-  if (!newLoading && hasSections.value) {
-    setTimeout(animateCards, 50)
-  }
+watch(() => props.loading, (n) => {
+  if (!n && props.sections.length) setTimeout(animateShowtimes, 50)
 })
-
-function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
-}
-
-function money(n?: number) {
-  return (Number(n || 0)).toLocaleString('es-CO')
-}
 </script>
 

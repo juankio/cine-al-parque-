@@ -30,7 +30,6 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import anime from 'animejs'
 
 const props = defineProps<{
   modelValue: string
@@ -41,15 +40,21 @@ const emit = defineEmits<{
 }>()
 
 const heroRef = ref<HTMLElement | null>(null)
+const isClient = typeof window !== 'undefined'
 
 onMounted(() => {
-  anime({
-    targets: heroRef.value,
-    opacity: [0, 1],
-    translateY: [20, 0],
-    duration: 800,
-    easing: 'easeOutExpo'
-  })
+  if (isClient) {
+    import('animejs').then((module) => {
+      const anime = module.default
+      anime({
+        targets: heroRef.value,
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 800,
+        easing: 'easeOutExpo'
+      })
+    })
+  }
 })
 
 function onUpdate(value: string) {

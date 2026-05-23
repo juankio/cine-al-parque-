@@ -60,16 +60,21 @@
 
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
-import anime from 'animejs'
 
 const props = defineProps<{
   loading: boolean, error: string | null, combos: { _id: string, nombre: string, precio: number, categoria?: string, tags?: string[], descripcion?: string }[]
 }>()
 
 const emit = defineEmits<{ (e: 'refresh'): void }>()
+const isClient = typeof window !== 'undefined'
 
 const animateCards = () => {
-  anime({ targets: '.combo-card', opacity: [0, 1], scale: [0.95, 1], delay: anime.stagger(100), duration: 600, easing: 'easeOutBack' })
+  if (isClient) {
+    import('animejs').then((module) => {
+      const anime = module.default
+      anime({ targets: '.combo-card', opacity: [0, 1], scale: [0.95, 1], delay: anime.stagger(100), duration: 600, easing: 'easeOutBack' })
+    })
+  }
 }
 
 onMounted(() => { if (!props.loading && props.combos.length) animateCards() })

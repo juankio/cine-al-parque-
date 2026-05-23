@@ -1,6 +1,9 @@
+import { connectDB } from '~/server/utils/mongoose'
 import { getSessionFromCookie } from '~/server/utils/auth'
 
 export default defineEventHandler(async (event) => {
+    await connectDB()
+
     const session = getSessionFromCookie(event)
     console.log('[API me] session?', !!session, session?.email)
     if (!session) return { authenticated: false, user: null }

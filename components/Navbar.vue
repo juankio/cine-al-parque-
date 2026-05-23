@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import type { NavigationMenuItem } from '@nuxt/ui'
 import { useAuth } from '~/composables/useAuth'
-import { computed, onMounted, ref, watch } from 'vue'
-import anime from 'animejs'
+import { onMounted, ref, computed, watch } from 'vue'
 
 const route = useRoute()
 const colorMode = useColorMode()
@@ -9,10 +9,28 @@ const isDark = computed(() => colorMode.value === 'dark')
 
 const { user, logout, fetchMe } = useAuth()
 const me = computed(() => user.value ?? null)
+
+const isClient = typeof window !== 'undefined'
+const navMenuRef = ref<HTMLElement | null>(null)
 const isMenuOpen = ref(false)
+const menuRef = ref<HTMLElement | null>(null)
 
 onMounted(() => {
   if (!user.value) fetchMe().catch(() => {})
+  
+  // Navbar entry animation
+  if (isClient) {
+    import('animejs').then((module) => {
+      const anime = module.default
+      anime({
+        targets: 'header',
+        translateY: [-50, 0],
+        opacity: [0, 1],
+        easing: 'easeOutExpo',
+        duration: 800,
+      })
+    })
+  }
 })
 
 const toggleTheme = () => {
@@ -33,16 +51,17 @@ const navItems = computed(() => {
   return items
 })
 
-const menuRef = ref<HTMLElement | null>(null)
-
 watch(isMenuOpen, (newVal) => {
-  if (newVal) {
-    anime({
-      targets: menuRef.value,
-      opacity: [0, 1],
-      translateY: [-10, 0],
-      duration: 300,
-      easing: 'easeOutExpo'
+  if (newVal && isClient) {
+    import('animejs').then((module) => {
+      const anime = module.default
+      anime({
+        targets: menuRef.value,
+        opacity: [0, 1],
+        translateY: [-10, 0],
+        duration: 300,
+        easing: 'easeOutExpo'
+      })
     })
   }
 })

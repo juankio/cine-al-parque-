@@ -1,3 +1,4 @@
+import { connectDB } from '~/server/utils/mongoose'
 import { createError, readBody } from 'h3'
 import bcrypt from 'bcrypt'
 import crypto from 'node:crypto'
@@ -16,6 +17,8 @@ function safeEq(a: string, b: string) {
 }
 
 export default defineEventHandler(async (event) => {
+    await connectDB()
+
     const body = await readBody<{ email?: string; password?: string; remember?: boolean }>(event)
     const email = (body?.email || '').toLowerCase().trim()
     const password = String(body?.password || '')

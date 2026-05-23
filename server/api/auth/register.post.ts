@@ -1,3 +1,4 @@
+import { connectDB } from '~/server/utils/mongoose'
 import { createError, readBody } from 'h3'
 import bcrypt from 'bcrypt'
 import { usersCol } from '~/server/utils/db'
@@ -8,6 +9,8 @@ function parseAdminEmails(s: string) {
 }
 
 export default defineEventHandler(async (event) => {
+    await connectDB()
+
     const { adminEmails } = useRuntimeConfig()
     const allowAdmins = parseAdminEmails(adminEmails)
 

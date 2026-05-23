@@ -61,44 +61,43 @@
 </template>
 
 <script setup lang="ts">
-import type { Movie, Showtime } from '~/composables/useMovies'
-import { onMounted, ref, watch } from 'vue'
-import anime from 'animejs'
+import { onMounted, watch } from 'vue'
 
 const props = defineProps<{
   loading: boolean
   error: string | null
-  filtered: Movie[]
-  upcomingShowtimes: (movieId: string, limit?: number) => Showtime[]
+  filtered: any[]
+  upcomingShowtimes: (movieId: string) => any[]
 }>()
 
-const sectionRef = ref<HTMLElement | null>(null)
+const isClient = typeof window !== 'undefined'
 
-const animateCards = () => {
-  anime({
-    targets: '.billboard-card',
-    opacity: [0, 1],
-    translateY: [20, 0],
-    delay: anime.stagger(100),
-    duration: 800,
-    easing: 'easeOutExpo'
-  })
+const animateGrid = () => {
+  if (isClient) {
+    import('animejs').then((module) => {
+      const anime = module.default
+      anime({
+        targets: '.movie-card',
+        opacity: [0, 1],
+        translateY: [30, 0],
+        duration: 800,
+        delay: anime.stagger(150),
+        easing: 'easeOutExpo'
+      })
+    })
+  }
 }
 
 onMounted(() => {
   if (!props.loading && props.filtered.length) {
-    animateCards()
+    animateGrid()
   }
 })
 
-watch(() => props.loading, (newLoading) => {
-  if (!newLoading && props.filtered.length) {
-    setTimeout(animateCards, 50)
+watch(() => props.loading, (newVal) => {
+  if (!newVal && props.filtered.length) {
+    setTimeout(animateGrid, 50)
   }
 })
-
-function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
-}
 </script>
 

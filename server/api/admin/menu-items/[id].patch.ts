@@ -1,8 +1,11 @@
+import { connectDB } from '~/server/utils/mongoose'
 // /server/api/admin/menu-items/[id].patch.ts
 import { MenuItem } from '~/server/models/MenuItem'
 import { Types } from 'mongoose'
 
 export default defineEventHandler(async (event) => {
+    await connectDB()
+
     const id = getRouterParam(event, 'id')
     const body = await readBody<any>(event)
     const patch: any = {}

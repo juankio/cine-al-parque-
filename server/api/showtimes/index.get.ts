@@ -2,8 +2,10 @@ import { defineEventHandler, getQuery } from 'h3'
 import { Showtime } from '~/server/models/Showtime'
 import { Movie } from '~/server/models/Movie'
 import { Types } from 'mongoose'
+import { connectDB } from '@/server/utils/mongoose'
 
 export default defineEventHandler(async (event) => {
+    await connectDB()
     const q = getQuery(event)
 
     // parámetros opcionales
