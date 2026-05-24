@@ -11,6 +11,10 @@
   [![Bun](https://img.shields.io/badge/Bun-000000?style=for-the-badge&logo=bun&logoColor=white)](https://bun.sh)
 
   <p>Cartelera dinámica, selección interactiva de asientos, reservas en tiempo real y panel administrativo.</p>
+  
+  <br>
+  <img src="public/preview.png" alt="Cine al Parque Preview" style="border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+  <br>
 </div>
 
 <hr>
