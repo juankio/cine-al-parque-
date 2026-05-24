@@ -1,121 +1,109 @@
-# ██████╗  ███╗   ██╗ ███████╗     🎬  CINE AL PARQUE
-# ██╔══██╗ ████╗  ██║ ██╔════╝     Plataforma Nuxt 3 para cine al aire libre
-# ██████╔╝ ██╔██╗ ██║ █████╗       Cartelera, funciones, reservas y asientos
-# ██╔══██╗ ██║╚██╗██║ ██╔══╝
-# ██║  ██║ ██║ ╚████║ ███████╗     by @juankio
-# ╚═╝  ╚═╝ ╚═╝  ╚═══╝ ╚══════╝
+<div align="center">
+  <img src="public/favicon.ico" alt="Logo" width="80" height="80">
+  <br>
+  <h1>🎬 Cine al Parque</h1>
+  <p><strong>Plataforma integral de cine al aire libre construida con Nuxt & Vue</strong></p>
+  
+  [![Nuxt](https://img.shields.io/badge/Nuxt_4-002E3B?style=for-the-badge&logo=nuxt.js&logoColor=00DC82)](https://nuxt.com/)
+  [![Vue](https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&logo=vuedotjs&logoColor=4FC08D)](https://vuejs.org/)
+  [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+  [![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+  [![Bun](https://img.shields.io/badge/Bun-000000?style=for-the-badge&logo=bun&logoColor=white)](https://bun.sh)
 
-[![Nuxt 3](https://img.shields.io/badge/Nuxt%203-00DC82?logo=nuxt.js&logoColor=white)](https://nuxt.com)
-[![Nuxt UI](https://img.shields.io/badge/Nuxt%20UI-18181B?logo=nuxt.js&logoColor=white)](https://ui.nuxt.com)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-38B2AC?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?logo=mongodb&logoColor=white)](https://www.mongodb.com)
-[![Node.js](https://img.shields.io/badge/Node.js-43853D?logo=node.js&logoColor=white)](https://nodejs.org)
-[![pnpm](https://img.shields.io/badge/pnpm-F69220?logo=pnpm&logoColor=white)](https://pnpm.io)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+  <p>Cartelera dinámica, selección interactiva de asientos, reservas en tiempo real y panel administrativo.</p>
+</div>
 
-──────────────────────────────────────────────────────────────────────────────
-🔎 DESCRIPCIÓN
-Cine al Parque es una plataforma web hecha con Nuxt 3 para gestionar funciones
-de cine al aire libre: cartelera, horarios, selección de asientos en tiempo
-real, reservas y panel administrativo.
+<hr>
 
-🧠 Autor: Juan Miguel Ruiz  (@juankio)
-💻 Stack: Nuxt 3, Nuxt UI, TailwindCSS, Pinia (JS), Node.js, MongoDB, fetch, localStorage
-──────────────────────────────────────────────────────────────────────────────
+## ✨ Características Principales
 
-🚀 CARACTERÍSTICAS CLAVE
-• 🎥 Cartelera dinámica: películas activas con info y horarios
-• 🪑 Asientos en tiempo real: selección interactiva y auto-refresh
-• 🎫 Reservas por función: el usuario elige y guarda su asiento
-• 🧾 Panel admin: CRUD de películas, funciones, (ingredientes/recetas si aplica)
-• 🌙 Modo oscuro/claro con @nuxt/ui + @nuxt/color-mode
-• ☁️ Integración Google Drive API (archivos y carpetas)
-• 🔔 Notificaciones con toast.add()
-• 📱 PWA lista para instalar
+- **🎥 Cartelera Dinámica:** Exploración de películas en cartelera con información detallada, trailers y funciones disponibles.
+- **🪑 Selección de Asientos en Tiempo Real:** Interfaz interactiva para elegir asientos y mesas, con auto-refresh y control de concurrencia.
+- **🎟️ Sistema de Reservas:** Flujo completo desde la selección del asiento hasta la confirmación de la reserva y escaneo de códigos QR.
+- **🛠️ Panel Administrativo (Boss):** Interfaz segura para la gestión (CRUD) de películas, horarios, recetas, inventario, KPIs de ventas y menús.
+- **🛡️ Autenticación y Seguridad:** Integración con Google OAuth2, JWT, y control estricto de roles y permisos (Cliente / Admin).
+- **🌗 Interfaz Fluida (Nuxt UI v4):** Diseño elegante impulsado por Tailwind CSS con soporte nativo para Modo Oscuro/Claro y animaciones con Anime.js.
 
-──────────────────────────────────────────────────────────────────────────────
-📁 ESTRUCTURA DEL PROYECTO
+## 📦 Stack Tecnológico
 
+El proyecto utiliza un stack moderno y fuertemente tipado:
+
+- **Frontend:** Nuxt 4, Vue 3 (Composition API), Pinia (State Management).
+- **UI & Estilos:** Nuxt UI v4, Tailwind CSS, Anime.js (Micro-interacciones).
+- **Backend:** Nuxt Nitro / H3 (API RESTful integrada).
+- **Base de Datos:** MongoDB + Mongoose (Modelado y validación de esquemas).
+- **Herramientas:** TypeScript estricto, ESLint, Playwright (Testing).
+- **Runtime & Gestor de Paquetes:** **Bun** (Exclusivo).
+
+## 🚀 Guía de Inicio Rápido
+
+> [!WARNING]
+> Este proyecto utiliza **exclusivamente `bun`** como runtime y gestor de paquetes. El uso de `npm` o `yarn` está estrictamente prohibido en este repositorio.
+
+### Prerrequisitos
+- [Bun](https://bun.sh/) (v1.1+)
+- Node.js (v20+)
+- Instancia de MongoDB (Local o Atlas)
+
+### Instalación
+
+1. Clona el repositorio e instala las dependencias usando `bun`:
+   ```bash
+   git clone https://github.com/juankio/cine-al-parque.git
+   cd cine-al-parque
+   bun install
+   ```
+
+2. Configura las variables de entorno. Crea un archivo `.env` en la raíz (puedes basarte en `.env.example` si existe):
+   ```env
+   NUXT_MONGODB_URI=mongodb://localhost:27017/cine-al-parque
+   NUXT_JWT_SECRET=tu_secreto_seguro_aqui
+   GOOGLE_CLIENT_ID=tu_cliente_google_aqui
+   ```
+
+3. Levanta el entorno de desarrollo:
+   ```bash
+   bun run dev
+   ```
+
+El servidor estará disponible en `http://localhost:3000`.
+
+## 📁 Estructura del Proyecto
+
+```text
 cine-al-parque/
-├── 📁 components/        # UI y componentes admin reutilizables
-├── 🧩 composables/       # Lógica reactiva/estados compartidos
-├── 📄 pages/             # Rutas y vistas
-├── ⚙️ server/api/        # Endpoints (Node.js + MongoDB)
-├── 🎨 assets/            # Estilos globales / fuentes
-├── 🧾 docs/              # Documentación (API, flujos, etc.)
-├── 🌍 public/            # Íconos / favicons / imágenes estáticas
-└── 🧠 nuxt.config.ts     # Configuración principal Nuxt
+├── components/       # Componentes Vue atómicos y fragmentados (UI, Boss, Public)
+├── composables/      # Lógica de negocio reutilizable (useAuth, useShowtimes, etc)
+├── layouts/          # Marcos de página (Default y Admin)
+├── middleware/       # Guardias de rutas (Autenticación y Roles)
+├── pages/            # Vistas y enrutamiento automático de Nuxt
+├── server/
+│   ├── api/          # Endpoints backend (Nitro)
+│   ├── models/       # Esquemas de Mongoose (Movie, Reservation, Showtime)
+│   └── plugins/      # Conexiones a DB e índices
+├── public/           # Assets estáticos y logos
+└── nuxt.config.ts    # Configuración maestra del framework
+```
 
-──────────────────────────────────────────────────────────────────────────────
-⚙️ INSTALACIÓN
+## 📜 Comandos Disponibles (Scripts)
 
-# Gestor recomendado
-pnpm install
+| Comando | Descripción |
+|---------|-------------|
+| `bun run dev` | Inicia el servidor de desarrollo en `localhost:3000`. |
+| `bun run build` | Compila la aplicación para producción. |
+| `bun run preview` | Previsualiza el build de producción localmente. |
+| `bun run lint` | Ejecuta ESLint para analizar y reportar problemas de código. |
+| `bunx nuxi typecheck` | Ejecuta la verificación de tipos de TypeScript. |
 
-# Alternativa (si alguien necesita)
-# npm install
+## 👨‍💻 Autor
 
-──────────────────────────────────────────────────────────────────────────────
-💡 DESARROLLO
+**Juan Miguel Ruiz** (@juankio)
+- 📍 Villavicencio, Meta — Colombia
+- 📧 juanmiguelruizsupe@gmail.com
+- 🐙 [GitHub: juankio](https://github.com/juankio)
 
-# Inicia el servidor en http://localhost:3000
-pnpm dev
+<hr>
 
-──────────────────────────────────────────────────────────────────────────────
-🏗️ PRODUCCIÓN
-
-# Compila el proyecto
-pnpm build
-
-# Previsualiza el build de producción
-pnpm preview
-
-──────────────────────────────────────────────────────────────────────────────
-🌐 DESPLIEGUE
-
-# Guía oficial de Nuxt para deploy (Vercel/Netlify/Node/Static/etc.)
-# https://nuxt.com/docs/getting-started/deployment
-
-──────────────────────────────────────────────────────────────────────────────
-🧭 COMANDOS ÚTILES (CHEATSHEET)
-
-# Linter/format (si está configurado en el repo)
-# pnpm lint
-# pnpm format
-
-# Análisis de dependencias (opcional)
-# pnpm dlx depcheck
-
-──────────────────────────────────────────────────────────────────────────────
-🧩 ROADMAP (PRÓXIMOS PASOS)
-
-[ ] 📅 Vista calendario de funciones (estilo Google Calendar)
-[ ] 👥 Login con Google OAuth2 (roles y permisos)
-[ ] 💬 Comentarios por archivo (solo el autor puede eliminar)
-[ ] 🎨 Personalización de carpetas (color/desc por defecto: #FFD700)
-[ ] 🧪 Tests básicos de componentes y páginas
-
-──────────────────────────────────────────────────────────────────────────────
-👤 DESARROLLADOR
-
-Nombre: Juan Miguel Ruiz 
-Email : juanmiguelruizsupe@gmail.com
-Ciudad: Villavicencio, Meta — Colombia
-GitHub: https://github.com/juankio
-
-──────────────────────────────────────────────────────────────────────────────
-🖤 CRÉDITOS
-
-Framework : Nuxt 3
-UI       : Nuxt UI + TailwindCSS
-DB       : MongoDB
-Runtime  : Node.js
-Store    : Pinia (JS)
-HTTP     : fetch (sin Axios)
-Storage  : localStorage
-Licencia : MIT
-
-──────────────────────────────────────────────────────────────────────────────
-💬 LEMA
-
-"Un parque, una pantalla, una experiencia compartida. 🎬✨"
+<p align="center">
+  <i>"Un parque, una pantalla, una experiencia compartida. 🎬✨"</i>
+</p>
