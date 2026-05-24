@@ -49,7 +49,7 @@ onMounted(async () => {
               <UButton
                 v-if="q"
                 variant="ghost"
-                color="gray"
+                color="neutral"
                 class="w-full sm:w-auto"
                 @click="q = ''; fetchRecipes(1, 50)"
               >

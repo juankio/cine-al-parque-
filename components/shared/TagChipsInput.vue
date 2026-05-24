@@ -79,7 +79,7 @@ function onKeydown(e: KeyboardEvent) {
         {{ tag }}
         <UButton
           variant="ghost"
-          color="gray"
+          color="neutral"
           size="xs"
           icon="i-heroicons-x-mark-20-solid"
           class="!px-1 !py-0.5"

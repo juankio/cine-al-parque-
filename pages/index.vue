@@ -77,7 +77,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="relative min-h-screen bg-[#020202] text-foreground selection:bg-primary/30 selection:text-primary pb-24 overflow-hidden">
+  <div class="relative min-h-screen bg-transparent text-foreground selection:bg-primary/30 selection:text-primary pb-24">
     
     <!-- Hero Full Bleed (De lado a lado sin restricciones) -->
     <HomeHero v-model="q" />

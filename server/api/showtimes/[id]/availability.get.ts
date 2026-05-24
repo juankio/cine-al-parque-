@@ -1,56 +1,56 @@
 import { connectDB } from '@/server/utils/mongoose'
 import { Showtime } from '@/server/models/Showtime'
-import { Table } from '@/server/models/Table'
-import { Seat } from '@/server/models/Seat'
+import { SeatLayout } from '@/server/models/SeatLayout'
 import { ReservationSeat } from '@/server/models/ReservationSeat'
+import { Reservation } from '@/server/models/Reservation'
+import pkg from 'mongoose'
+const { Types } = pkg
 
 export default defineEventHandler(async (event) => {
     await connectDB()
 
-    const showtimeId = getRouterParam(event, 'id')
-    if (!showtimeId) {
-        throw createError({ statusCode: 400, statusMessage: 'Falta id de showtime' })
-    }
-    // valida showtime
-    const st = await Showtime.findById(showtimeId).select('_id').lean()
-    if (!st) {
-        throw createError({ statusCode: 404, statusMessage: 'Showtime no encontrado' })
+    const rawId = getRouterParam(event, 'id')
+    if (!rawId || !Types.ObjectId.isValid(rawId)) {
+        throw createError({ statusCode: 400, statusMessage: 'Showtime inválido' })
     }
 
-    // Traer layout (mesas y asientos) y los asientos tomados
-    const [tables, seats, takenDocs] = await Promise.all([
-        Table.find({ showtimeId }).sort({ code: 1 }).lean(),
-        Seat.find({ showtimeId }).sort({ tableCode: 1, seatCode: 1 }).lean(),
-        ReservationSeat.find({
-            showtimeId,
-            status: { $in: ['pending', 'paid'] }
-        })
-            .select('seatKey')
-            .lean()
-    ])
+    const showtime = await Showtime.findById(rawId).lean()
+    if (!showtime || !showtime.active) throw createError({ statusCode: 404, statusMessage: 'Showtime no encontrado' })
 
-    const takenSet = new Set(takenDocs.map(d => d.seatKey))
+    // Validar holds expirados
+    const now = new Date()
+    const expiredReservations = await Reservation.find({ status: 'pending', expiresAt: { $lt: now } }).select('_id').lean()
+    const expiredIds = expiredReservations.map((r: any) => r._id)
 
-    // Agrupar asientos por mesa y marcar taken
-    const seatsByTable = new Map<string, { code: string; taken: boolean }[]>()
-    for (const s of seats) {
-        const list = seatsByTable.get(s.tableCode) || []
-        list.push({
-            code: s.seatCode,
-            taken: takenSet.has(`${s.tableCode}-${s.seatCode}`)
-        })
-        seatsByTable.set(s.tableCode, list)
+    if (expiredIds.length > 0) {
+        await Reservation.updateMany({ _id: { $in: expiredIds } }, { $set: { status: 'expired' } })
+        await ReservationSeat.deleteMany({ reservationId: { $in: expiredIds } })
     }
 
-    const payload = tables.map(t => {
-        const list = seatsByTable.get(t.code) || []
-        list.sort((a, b) => a.code.localeCompare(b.code)) // A,B,(C,D)
-        return {
-            table: t.code,
-            capacity: t.capacity,
-            seats: list
-        }
-    })
+    const layout = await SeatLayout.findOne({ showtimeId: rawId }).lean()
+    if (!layout) {
+        return { ok: true, layout: null, taken: [] }
+    }
 
-    return { showtimeId, tables: payload }
+    const takenSeats = await ReservationSeat.find({ showtimeId: rawId }).lean()
+
+    const transformedLayout = {
+        _id: layout._id.toString(),
+        showtimeId: layout.showtimeId.toString(),
+        seats: layout.seats.map((s: any) => ({
+            seatKey: s.seatKey,
+            label: s.label,
+            type: s.type,
+            x: s.x,
+            y: s.y,
+            status: s.status,
+            metadata: s.metadata || {}
+        }))
+    }
+
+    return {
+        ok: true,
+        layout: transformedLayout,
+        taken: takenSeats.map((t: any) => t.seatKey)
+    }
 })

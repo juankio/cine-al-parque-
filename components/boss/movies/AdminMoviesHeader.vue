@@ -24,7 +24,7 @@ const emit = defineEmits<{
           <UButton
             v-if="query"
             variant="ghost"
-            color="gray"
+            color="neutral"
             class="w-full sm:w-auto"
             @click="query = ''"
           >

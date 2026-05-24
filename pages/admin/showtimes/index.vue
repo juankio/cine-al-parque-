@@ -65,7 +65,7 @@ const fmtMoney = (n?: number) => (typeof n === 'number' ? n : 0).toLocaleString(
       subtitle="Crea funciones y configura el layout de sillas."
     >
       <template #actions>
-        <UButton to="/admin/movies" variant="outline" color="gray" size="sm">← Volver a Películas</UButton>
+        <UButton to="/admin/movies" variant="outline" color="neutral" size="sm">← Volver a Películas</UButton>
       </template>
     </PageHeader>
 
@@ -105,7 +105,7 @@ const fmtMoney = (n?: number) => (typeof n === 'number' ? n : 0).toLocaleString(
     <LoadingSkeleton v-if="loading" :rows="3" />
     <UAlert
       v-else-if="error"
-      color="gray"
+      color="neutral"
       variant="soft"
       icon="i-heroicons-exclamation-triangle"
       :description="error"
@@ -141,7 +141,7 @@ const fmtMoney = (n?: number) => (typeof n === 'number' ? n : 0).toLocaleString(
               <UButton
                 :to="`/showtimes/${s._id}`"
                 variant="outline"
-                color="gray"
+                color="neutral"
                 size="sm"
               >
                 Ver público
@@ -149,7 +149,7 @@ const fmtMoney = (n?: number) => (typeof n === 'number' ? n : 0).toLocaleString(
 
               <UButton
                 variant="soft"
-                color="gray"
+                color="neutral"
                 size="sm"
                 @click="askDelete(s._id)"
                 icon="i-heroicons-trash"

@@ -1,11 +1,15 @@
 import { connectDB } from '@/server/utils/mongoose'
-import { requireAdmin } from '@/server/utils/admin'
 import { Recipe } from '@/server/models/Recipe'
+import { readSession } from '@/server/utils/session'
 
 export default defineEventHandler(async (event) => {
-    await connectDB(); await requireAdmin(event)
-    const id = getRouterParam(event, 'id')
-    const res = await Recipe.findByIdAndDelete(id)
-    if (!res) throw createError({ statusCode: 404, statusMessage: 'No encontrado' })
-    return { ok: true }
+  await connectDB()
+  const session = await readSession(event)
+  if (!session || !session.isAdmin) throw createError({ statusCode: 403 })
+
+  const id = getRouterParam(event, 'id')
+  const deleted = await Recipe.findByIdAndDelete(id).lean()
+
+  if (!deleted) throw createError({ statusCode: 404 })
+  return { ok: true }
 })

@@ -144,7 +144,7 @@ onBeforeUnmount(() => stopScanner())
           </div>
           <UAlert
             v-if="scannerError"
-            color="red"
+            color="error"
             icon="i-heroicons-information-circle"
             :description="scannerError"
             title="No pudimos usar la cámara"

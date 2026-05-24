@@ -1,9 +1,10 @@
 import { connectDB } from '@/server/utils/mongoose'
 import { readSession } from '@/server/utils/session'
-import { Reservation } from '@/server/models/Reservation'
-import { Showtime } from '@/server/models/Showtime'
-import { Movie } from '@/server/models/Movie'
+import { Reservation, type IReservation } from '@/server/models/Reservation'
+import { Showtime, type IShowtime } from '@/server/models/Showtime'
+import { Movie, type IMovie } from '@/server/models/Movie'
 import { encodeReservationToken } from '@/server/utils/reservationToken'
+import type { Types } from 'mongoose'
 
 type ReservationResponse = {
   id: string
@@ -48,36 +49,36 @@ export default defineEventHandler(async (event) => {
   const reservations = await Reservation.find({ userId: session.id })
     .sort({ createdAt: -1 })
     .limit(limit)
-    .lean()
+    .lean<IReservation[]>()
 
   if (!reservations.length) {
     return []
   }
 
   const showtimeIds = reservations
-    .map((res) => res.showtimeId?.toString())
-    .filter((id): id is string => Boolean(id))
+    .map((res: IReservation) => res.showtimeId?.toString())
+    .filter((id: string | undefined): id is string => Boolean(id))
 
   const showtimes = showtimeIds.length
     ? await Showtime.find({ _id: { $in: showtimeIds } })
         .select('fechaHora sala movieId')
-        .lean()
+        .lean<IShowtime[]>()
     : []
-  const showtimeMap = new Map(showtimes.map((st) => [st._id.toString(), st]))
+  const showtimeMap = new Map<string, IShowtime>(showtimes.map((st: IShowtime) => [st._id.toString(), st]))
 
   const movieIds = showtimes
-    .map((st) => st.movieId?.toString())
-    .filter((id): id is string => Boolean(id))
+    .map((st: IShowtime) => st.movieId?.toString())
+    .filter((id: string | undefined): id is string => Boolean(id))
   const movies = movieIds.length
     ? await Movie.find({ _id: { $in: movieIds } })
         .select('titulo poster')
-        .lean()
+        .lean<IMovie[]>()
     : []
-  const movieMap = new Map(movies.map((mv) => [mv._id.toString(), mv]))
+  const movieMap = new Map<string, IMovie>(movies.map((mv: IMovie) => [mv._id.toString(), mv]))
 
   const now = Date.now()
 
-  const response: ReservationResponse[] = reservations.map((res) => {
+  const response: ReservationResponse[] = reservations.map((res: IReservation) => {
     const cart = (res.cart || []).map((item: any) => ({
       menuItemId: String(item.menuItemId),
       nombre: item.nombre,
@@ -85,7 +86,7 @@ export default defineEventHandler(async (event) => {
       qty: Number(item.qty || 0)
     }))
 
-    const cartTotal = cart.reduce((sum, item) => sum + item.unitPrice * item.qty, 0)
+    const cartTotal = cart.reduce((sum: number, item: any) => sum + item.unitPrice * item.qty, 0)
     const seats = Array.isArray(res.seats) ? res.seats : []
     const seatsTotal = Math.max(0, Number(res.total || 0) - cartTotal)
 

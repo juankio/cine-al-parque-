@@ -1,6 +1,6 @@
 import { connectDB } from '@/server/utils/mongoose'
-import { Showtime } from '@/server/models/Showtime'
-import { Movie } from '@/server/models/Movie'
+import { Showtime, type IShowtime } from '@/server/models/Showtime'
+import { Movie, type IMovie } from '@/server/models/Movie'
 import pkg from 'mongoose'
 const { Types } = pkg
 
@@ -9,17 +9,17 @@ export default defineEventHandler(async (event) => {
 
     const rawId = getRouterParam(event, 'id')
     if (!rawId || !Types.ObjectId.isValid(rawId)) {
-        throw createError({ statusCode: 400, statusMessage: 'Showtime invǭlido' })
+        throw createError({ statusCode: 400, statusMessage: 'Showtime inválido' })
     }
 
-    const showtime = await Showtime.findById(rawId).lean()
+    const showtime = await Showtime.findById(rawId).lean<IShowtime>()
     if (!showtime || !showtime.active) {
         throw createError({ statusCode: 404, statusMessage: 'Showtime no encontrado' })
     }
 
     const movie = await Movie.findById(showtime.movieId)
         .select('titulo poster duracion clasificacion sinopsis')
-        .lean()
+        .lean<IMovie>()
 
     return {
         id: String(showtime._id),

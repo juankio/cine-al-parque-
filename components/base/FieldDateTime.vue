@@ -31,7 +31,7 @@ function apply() {
     <UButton
       block
       variant="outline"
-      color="gray"
+      color="neutral"
       class="justify-start"
       icon="i-heroicons-calendar-days-20-solid"
     >

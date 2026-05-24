@@ -1,5 +1,5 @@
 <template>
-  <section ref="sectionRef" class="space-y-8 relative w-full px-4 sm:px-6 lg:px-8 max-w-[1800px] mx-auto">
+  <section ref="targetRef" class="space-y-8 relative w-full px-4 sm:px-6 lg:px-8 max-w-[1800px] mx-auto">
     <div class="flex items-center justify-between border-b border-border/50 pb-5">
       <h2 class="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
         <UIcon name="i-heroicons-film" class="text-primary w-8 h-8" />
@@ -65,7 +65,8 @@
 
 <script setup lang="ts">
 import { animate, stagger } from 'animejs'
-import { onMounted, watch } from 'vue'
+import { onMounted, watch, ref } from 'vue'
+import { useIntersectionObserver } from '@vueuse/core'
 
 const props = defineProps<{
   loading: boolean
@@ -75,6 +76,8 @@ const props = defineProps<{
 }>()
 
 const isClient = typeof window !== 'undefined'
+const targetRef = ref(null)
+const hasAnimated = ref(false)
 
 const fmtTime = (dateStr: string) => {
   if (!dateStr) return '--:--'
@@ -83,26 +86,33 @@ const fmtTime = (dateStr: string) => {
 }
 
 const animateGrid = () => {
-  if (isClient) {
+  if (isClient && !hasAnimated.value) {
+    hasAnimated.value = true
     animate('.billboard-card', {
       opacity: [0, 1],
-      translateY: [40, 0],
-      scale: [0.95, 1],
-      duration: 800,
-      delay: stagger(50),
-      ease: 'outQuart'
+      translateY: [60, 0],
+      rotateX: [15, 0],
+      scale: [0.9, 1],
+      duration: 1200,
+      delay: stagger(70, { start: 100 }),
+      ease: 'outExpo'
     })
   }
 }
 
 onMounted(() => {
-  if (!props.loading && props.filtered.length) {
-    animateGrid()
+  if (isClient) {
+    useIntersectionObserver(targetRef, ([{ isIntersecting }]) => {
+      if (isIntersecting && !props.loading && props.filtered.length) {
+        animateGrid()
+      }
+    }, { threshold: 0.1 })
   }
 })
 
 watch(() => props.loading, (newVal) => {
-  if (!newVal && props.filtered.length) {
+  if (!newVal && props.filtered.length && hasAnimated.value) {
+    hasAnimated.value = false;
     setTimeout(animateGrid, 50)
   }
 })

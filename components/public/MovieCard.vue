@@ -41,7 +41,7 @@
             :to="`/showtimes/${s.id || s._id}`"
             size="xs"
             variant="soft"
-            color="gray"
+            color="neutral"
             title="Ver asientos y reservar"
           >
             🎟 {{ formatHour(s.fechaHora) }}

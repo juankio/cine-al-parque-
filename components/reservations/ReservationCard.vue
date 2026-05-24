@@ -109,7 +109,7 @@ const showConfirm = computed(() => props.reservation.status === 'pending')
 
         <div v-if="showConfirm" class="space-y-3">
           <UAlert
-            color="amber"
+            color="warning"
             variant="soft"
             icon="i-heroicons-clock"
             title="Pago pendiente"

@@ -1,52 +1,44 @@
 import { connectDB } from '@/server/utils/mongoose'
-import { requireAdmin } from '@/server/utils/admin'
-import { Ingredient, UNIT_MAP } from '@/server/models/Ingredient'
+import { Ingredient, type IIngredient } from '@/server/models/Ingredient'
+import { InventoryLog } from '@/server/models/InventoryLog'
+import { readSession } from '@/server/utils/session'
 
 export default defineEventHandler(async (event) => {
-    await connectDB(); await requireAdmin(event)
-    const b = await readBody<{ ingredientId: string, qty: number, unit: 'g' | 'kg' | 'ml' | 'l' | 'unid', totalCost: number, nota?: string }>(event)
+  await connectDB()
+  const session = await readSession(event)
+  if (!session || !session.isAdmin) throw createError({ statusCode: 403 })
 
-    if (!b?.ingredientId || !b?.qty || !b?.unit || !b?.totalCost) {
-        throw createError({ statusCode: 400, statusMessage: 'ingredientId, qty, unit y totalCost son requeridos' })
-    }
-    const qty = Number(b.qty); const totalCost = Number(b.totalCost)
-    if (qty <= 0 || totalCost < 0) throw createError({ statusCode: 400, statusMessage: 'qty y totalCost inválidos' })
+  const body = await readBody(event)
+  const { ingredientId, qty, unit, cost } = body
 
-    const ing = await Ingredient.findById(b.ingredientId)
-    if (!ing) throw createError({ statusCode: 404, statusMessage: 'Ingrediente no encontrado' })
+  const ing = await Ingredient.findById(ingredientId)
+  if (!ing) throw createError({ statusCode: 404, statusMessage: 'Ingrediente no encontrado' })
 
-    const def = UNIT_MAP[b.unit]
-    if (!def) throw createError({ statusCode: 400, statusMessage: 'Unidad inválida' })
+  // Convert unit to base unit
+  let addedBaseQty = Number(qty)
+  if (unit === 'kg' && ing.unidadBase === 'g') addedBaseQty *= 1000
+  if (unit === 'l' && ing.unidadBase === 'ml') addedBaseQty *= 1000
 
-    // convertir qty a la base del ingrediente
-    // si la compra viene en unidad distinta a la base del ingrediente, multiplicamos por factor
-    const qtyBaseCompra = def.base === ing.unidadBase ? qty * def.factor : qty * def.factor // (mismo cálculo; mantenemos claro)
-    const costoUnitCompra = qtyBaseCompra > 0 ? totalCost / qtyBaseCompra : 0
+  // Update average cost
+  const oldTotalCost = ing.stockBase * ing.costoPromedio
+  const newTotalCost = Number(cost) || 0
+  const newStock = ing.stockBase + addedBaseQty
+  
+  const newAvgCost = newStock > 0 ? (oldTotalCost + newTotalCost) / newStock : 0
 
-    // promedio ponderado
-    const stockAnterior = ing.stockBase || 0
-    const costoAnterior = ing.costoPromedio || 0
-    const stockNuevo = stockAnterior + qtyBaseCompra
-    const costoPromedioNuevo = stockNuevo > 0
-        ? ((stockAnterior * costoAnterior) + totalCost) / stockNuevo
-        : costoUnitCompra
+  ing.stockBase = newStock
+  ing.costoPromedio = newAvgCost
+  await ing.save()
 
-    ing.stockBase = stockNuevo
-    ing.costoPromedio = costoPromedioNuevo
-    await ing.save()
+  await InventoryLog.create({
+    ingredientId: ing._id,
+    type: 'IN',
+    qty: addedBaseQty,
+    unit: ing.unidadBase,
+    cost: newTotalCost,
+    reason: 'Manual Entry (Admin)',
+    userId: session.id
+  })
 
-    // (Opcional: guardar movimiento en una colección aparte si quieres llevar el historial)
-    return {
-        ok: true,
-        ingredient: {
-            id: String(ing._id),
-            stockBase: ing.stockBase,
-            costoPromedio: ing.costoPromedio,
-            unidadBase: ing.unidadBase
-        },
-        compra: {
-            qtyBase: qtyBaseCompra,
-            costoUnit: costoUnitCompra
-        }
-    }
+  return ing
 })

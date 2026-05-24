@@ -12,7 +12,7 @@ const emit = defineEmits(['confirm'])
     <template #footer>
       <div class="flex justify-end gap-2">
         <UButton label="Cancelar" variant="subtle" color="neutral" @click="model = false" />
-        <UButton label="Eliminar" color="red" @click="emit('confirm')" />
+        <UButton label="Eliminar" color="error" @click="emit('confirm')" />
       </div>
     </template>
   </UModal>

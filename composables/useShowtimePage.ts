@@ -1,41 +1,19 @@
-import { ref, computed, watch, onMounted, onBeforeUnmount, reactive } from 'vue'
-import { useRoute, useToast } from '#imports'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useToast, navigateTo } from '#imports'
 import { useShowtimeLayout } from '~/composables/useShowtimeLayout'
 import { useAuth } from '~/composables/useAuth'
 import { useCombos } from '~/composables/useCombos'
-import type { ComboItem } from '~/composables/useCombos'
-import type { ShowtimeInfo, CartLine, ReservationSnapshot, LayoutStat } from '~/types/showtime'
+import { useShowtimeDetails } from './showtime/useShowtimeDetails'
+import { useShowtimeCart } from './showtime/useShowtimeCart'
+import { useShowtimeHold } from './showtime/useShowtimeHold'
+import type { LayoutStat } from '~/types/showtime'
 
 export const useShowtimePage = () => {
     const toast = useToast()
     const route = useRoute()
     const { user, ensureSession } = useAuth()
 
-    const showtimeId = computed(() => String(route.params.id || ''))
-
-    const showtime = ref<ShowtimeInfo | null>(null)
-    const showtimeLoading = ref(false)
-    const showtimeError = ref<string | null>(null)
-
-    async function fetchShowtimeDetails() {
-        const id = showtimeId.value
-        if (!id) return
-        showtimeLoading.value = true
-        showtimeError.value = null
-        try {
-            const data = await $fetch<ShowtimeInfo>(`/api/showtimes/${id}`, { credentials: 'include' })
-            showtime.value = data
-        } catch (e: any) {
-            showtimeError.value = e?.data?.message || e?.message || 'No se pudo cargar la función'
-            showtime.value = null
-        } finally {
-            showtimeLoading.value = false
-        }
-    }
-
-    watch(showtimeId, () => {
-        if (showtimeId.value) fetchShowtimeDetails()
-    }, { immediate: true })
+    const { showtimeId, showtime, showtimeLoading, showtimeError, fetchShowtimeDetails } = useShowtimeDetails()
 
     const {
         loading: layoutLoading,
@@ -48,17 +26,13 @@ export const useShowtimePage = () => {
         selectionList,
         fetchLayout,
         toggleSeat,
-        resetSelection
+        resetSelection,
+        selectionCount,
+        hasTakenSelected,
+        lastRefreshDate
     } = useShowtimeLayout(showtimeId)
 
-    const reserveMode = ref(false)
-    const reserving = ref(false)
-    const confirming = ref(false)
     const autoRefTS = ref<number | null>(null)
-    const lastRefreshedAt = ref<string | null>(null)
-    const lastHold = ref<ReservationSnapshot | null>(null)
-    const holdCountdown = ref<string | null>(null)
-    const holdTimer = ref<ReturnType<typeof setInterval> | null>(null)
 
     const {
         combos,
@@ -68,35 +42,9 @@ export const useShowtimePage = () => {
         refresh: refreshCombos
     } = useCombos()
 
-    const cart = reactive<Record<string, CartLine>>({})
-    const cartItems = computed(() => Object.values(cart))
-    const cartCount = computed(() => cartItems.value.reduce((sum, item) => sum + item.qty, 0))
-    const cartSubtotal = computed(() => cartItems.value.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0))
-
-    function setComboQty(combo: ComboItem, qty: number) {
-        const normalized = Math.max(0, Math.min(99, Math.round(qty)))
-        if (!normalized) {
-            delete cart[combo._id]
-            return
-        }
-        cart[combo._id] = {
-            menuItemId: combo._id,
-            nombre: combo.nombre,
-            unitPrice: combo.precio,
-            qty: normalized
-        }
-    }
-    function incrementCombo(combo: ComboItem) {
-        const current = cart[combo._id]?.qty || 0
-        setComboQty(combo, current + 1)
-    }
-    function decrementCombo(combo: ComboItem) {
-        const current = cart[combo._id]?.qty || 0
-        setComboQty(combo, current - 1)
-    }
-    function clearCart() {
-        Object.keys(cart).forEach((key) => { delete cart[key] })
-    }
+    const { cart, cartItems, cartCount, cartSubtotal, setComboQty, incrementCombo, decrementCombo, clearCart } = useShowtimeCart()
+    
+    const { reserving, reserveMode, lastHold, holdCountdown, holdTimer, holdDescription, stopHoldTicker, handleHoldExpired, startHoldTicker } = useShowtimeHold(fetchLayout, resetSelection, clearCart)
 
     const handleFocusRefresh = () => {
         fetchLayout({ silent: true }).catch(() => { })
@@ -110,6 +58,7 @@ export const useShowtimePage = () => {
         }
         fetchCombos({ force: true }).catch(() => { })
     })
+
     onBeforeUnmount(() => {
         if (process.client) {
             window.removeEventListener('focus', handleFocusRefresh)
@@ -119,70 +68,23 @@ export const useShowtimePage = () => {
     })
 
     watch(tables, () => {
-        lastRefreshedAt.value = new Date().toISOString()
-        pulseAutoRef()
-    })
-
-    watch(reserveMode, async (enabled) => {
-        if (!enabled) {
+        if (reserveMode.value && hasTakenSelected.value) {
+            toast.add({
+                title: 'Alguien se adelantó',
+                description: 'Algunos de tus asientos ya no están disponibles.',
+                color: 'error',
+                icon: 'i-heroicons-exclamation-triangle'
+            })
             resetSelection()
-            return
         }
-        const ok = await requireLogin()
-        if (!ok) reserveMode.value = false
-    })
+    }, { deep: true })
 
-    watch(lastHold, () => {
-        if (lastHold.value?.status === 'pending' && lastHold.value.expiresAt) {
-            startHoldTicker()
+    watch(lastHold, (nv) => {
+        if (nv?.expiresAt && nv.status === 'pending') {
+            startHoldTicker(nv.expiresAt)
         } else {
             stopHoldTicker()
         }
-    }, { immediate: true })
-
-    const stats = computed<LayoutStat[]>(() => ([
-        { label: 'Total', value: totalSeats.value },
-        { label: 'Ocupadas', value: takenSeats.value },
-        { label: 'Libres', value: freeSeats.value }
-    ]))
-
-    const seatPrice = computed(() => Number(showtime.value?.price || 0))
-    const selectionCount = computed(() => selectionList.value.length)
-    const selectionTotal = computed(() => seatPrice.value * selectionCount.value)
-    const hasCartItems = computed(() => cartItems.value.length > 0)
-    const orderTotal = computed(() => selectionTotal.value + cartSubtotal.value)
-
-    const formattedShowtime = computed(() => {
-        if (!showtime.value?.fechaHora) return 'Horario por confirmar'
-        return new Date(showtime.value.fechaHora).toLocaleString('es-CO', {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
-        })
-    })
-
-    const lastRefreshLabel = computed(() => {
-        if (!lastRefreshedAt.value) return '—'
-        return new Date(lastRefreshedAt.value).toLocaleTimeString('es-CO', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        })
-    })
-
-    const holdDescription = computed(() => {
-        if (!lastHold.value) return ''
-        const code = (lastHold.value.id || '').slice(-6).toUpperCase()
-        const prefix = `Código ${code || lastHold.value.id} • $ ${money(lastHold.value.total)}`
-        if (lastHold.value.status === 'paid') return `${prefix}. Pago confirmado.`
-        if (holdCountdown.value) return `${prefix}. Expira en ${holdCountdown.value}.`
-        if (lastHold.value.expiresAt) {
-            const time = new Date(lastHold.value.expiresAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
-            return `${prefix}. Expira a las ${time}.`
-        }
-        return prefix
     })
 
     const canReserve = computed(() => reserveMode.value && selectionCount.value > 0 && !reserving.value)
@@ -191,6 +93,30 @@ export const useShowtimePage = () => {
     function money(value?: number) {
         return (Number(value || 0)).toLocaleString('es-CO')
     }
+
+    const seatPrice = computed(() => showtime.value?.price || 0)
+    const selectionTotal = computed(() => selectionCount.value * seatPrice.value)
+    const hasCartItems = computed(() => cartCount.value > 0)
+    const orderTotal = computed(() => selectionTotal.value + cartSubtotal.value)
+
+    const formattedShowtime = computed(() => {
+        if (!showtime.value?.fechaHora) return ''
+        const d = new Date(showtime.value.fechaHora)
+        const dateStr = d.toLocaleDateString('es-CO', { weekday: 'long', month: 'long', day: 'numeric' })
+        const timeStr = d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
+        return `${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)} • ${timeStr}`
+    })
+
+    const stats = computed<LayoutStat[]>(() => [
+        { label: 'Disponibles', value: freeSeats.value, color: 'text-primary' },
+        { label: 'Ocupados', value: takenSeats.value, color: 'text-muted-foreground' },
+        { label: 'Total', value: totalSeats.value, color: 'text-foreground' }
+    ])
+
+    const lastRefreshLabel = computed(() => {
+        if (!lastRefreshDate.value) return 'Nunca'
+        return lastRefreshDate.value.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    })
 
     async function requireLogin() {
         await ensureSession()
@@ -209,50 +135,6 @@ export const useShowtimePage = () => {
     function pulseAutoRef() {
         if (autoRefTS.value) return
         autoRefTS.value = window.setTimeout(() => { autoRefTS.value = null }, 1000)
-    }
-
-    function stopHoldTicker() {
-        if (holdTimer.value) {
-            clearInterval(holdTimer.value)
-            holdTimer.value = null
-        }
-        holdCountdown.value = null
-    }
-
-    function handleHoldExpired() {
-        stopHoldTicker()
-        if (!lastHold.value) return
-        toast.add({
-            title: 'Reserva expirada',
-            description: 'Los asientos volvieron a estar disponibles. Selecciónalos de nuevo para intentar otra vez.',
-            color: 'neutral',
-            icon: 'i-heroicons-clock'
-        })
-        lastHold.value = null
-        fetchLayout()
-    }
-
-    function tickHoldCountdown() {
-        if (!lastHold.value?.expiresAt) {
-            holdCountdown.value = null
-            return
-        }
-        const expires = new Date(lastHold.value.expiresAt).getTime()
-        const diff = expires - Date.now()
-        if (diff <= 0) {
-            holdCountdown.value = '00:00'
-            handleHoldExpired()
-            return
-        }
-        const minutes = Math.floor(diff / 60_000)
-        const seconds = Math.floor((diff % 60_000) / 1000)
-        holdCountdown.value = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-    }
-
-    function startHoldTicker() {
-        stopHoldTicker()
-        tickHoldCountdown()
-        holdTimer.value = setInterval(tickHoldCountdown, 1_000)
     }
 
     async function handleReserve() {
@@ -306,53 +188,79 @@ export const useShowtimePage = () => {
             fetchLayout()
         } catch (e: any) {
             const status = e?.response?.status || e?.statusCode
-            let message = e?.data?.message || e?.message || 'No pudimos completar la reserva'
-            if (status === 409) {
-                message = 'Alguno de los asientos ya fue tomado. Actualizamos el layout.'
-                fetchLayout()
-            } else if (status === 401) {
-                await requireLogin()
-                message = 'Inicia sesión para continuar.'
-            }
             toast.add({
-                title: 'Reserva no completada',
-                description: message,
-                color: 'red',
-                icon: 'i-heroicons-exclamation-triangle'
+                title: 'No pudimos bloquear los asientos',
+                description: e?.data?.message || e?.message || 'Error desconocido',
+                color: status === 409 ? 'warning' : 'error',
+                icon: status === 409 ? 'i-heroicons-exclamation-triangle' : 'i-heroicons-x-circle'
             })
+            if (status === 409) {
+                resetSelection()
+                fetchLayout({ silent: true })
+            }
         } finally {
             reserving.value = false
         }
     }
 
-    async function confirmPayment() {
-        if (!lastHold.value || lastHold.value.status === 'paid' || confirming.value) return
+    const confirmLoading = ref(false)
+    async function handleConfirmPayment() {
+        if (!lastHold.value) return
         if (!(await requireLogin())) return
-        confirming.value = true
+        confirmLoading.value = true
         try {
+            const body = { reservationId: lastHold.value.id }
             await $fetch('/api/payments/confirm', {
                 method: 'POST',
                 credentials: 'include',
-                body: { reservationId: lastHold.value.id }
+                body
             })
-            lastHold.value = { ...lastHold.value, status: 'paid', expiresAt: null }
             toast.add({
-                title: 'Pago confirmado',
-                description: 'Tu reserva quedó marcada como pagada.',
+                title: '¡Pago Confirmado!',
+                description: 'Tus sillas y combos están asegurados. Revisa tus entradas.',
                 color: 'success',
-                icon: 'i-heroicons-credit-card'
+                icon: 'i-heroicons-check-badge'
             })
-            fetchLayout()
+            lastHold.value.status = 'paid'
+            lastHold.value.expiresAt = null
         } catch (e: any) {
-            const message = e?.data?.message || e?.message || 'No pudimos confirmar el pago'
             toast.add({
-                title: 'Error al confirmar',
-                description: message,
-                color: 'red',
-                icon: 'i-heroicons-exclamation-triangle'
+                title: 'Error confirmando el pago',
+                description: e?.data?.message || e?.message || 'Revisa tu conexión.',
+                color: 'error'
             })
         } finally {
-            confirming.value = false
+            confirmLoading.value = false
+        }
+    }
+
+    const cancelLoading = ref(false)
+    async function handleCancelHold() {
+        if (!lastHold.value) return
+        cancelLoading.value = true
+        try {
+            await $fetch(`/api/reservations/${lastHold.value.id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            })
+            toast.add({
+                title: 'Reserva cancelada',
+                description: 'Los asientos han sido liberados.',
+                color: 'info',
+                icon: 'i-heroicons-information-circle'
+            })
+            lastHold.value = null
+            reserveMode.value = true
+            resetSelection()
+            fetchLayout()
+        } catch (e: any) {
+            toast.add({
+                title: 'No se pudo cancelar',
+                description: e?.data?.message || e?.message,
+                color: 'error'
+            })
+        } finally {
+            cancelLoading.value = false
         }
     }
 
@@ -362,40 +270,58 @@ export const useShowtimePage = () => {
         showtimeLoading,
         showtimeError,
         fetchShowtimeDetails,
+
         layoutLoading,
         layoutError,
         tables,
+        totalSeats,
+        takenSeats,
+        freeSeats,
         selected,
-        toggleSeat,
-        reserveMode,
-        stats,
-        seatPrice,
-        selectionCount,
-        selectionTotal,
         selectionList,
-        hasCartItems,
-        cartSubtotal,
-        orderTotal,
-        formattedShowtime,
-        lastRefreshLabel,
-        autoRefreshActive,
-        canReserve,
-        reserving,
+        selectionCount,
+        hasTakenSelected,
         fetchLayout,
-        handleReserve,
+        toggleSeat,
+        resetSelection,
+
         combos,
         combosLoading,
         combosError,
-        cart,
-        cartCount,
+        fetchCombos,
         refreshCombos,
-        clearCart,
+
+        cart,
+        cartItems,
+        cartCount,
+        cartSubtotal,
+        setComboQty,
         incrementCombo,
         decrementCombo,
+        clearCart,
+
+        reserving,
+        reserveMode,
         lastHold,
-        holdDescription,
         holdCountdown,
-        confirming,
-        confirmPayment
+        holdDescription,
+        canReserve,
+        autoRefreshActive,
+
+        pulseAutoRef,
+        handleReserve,
+        confirmPayment: handleConfirmPayment,
+        confirmLoading,
+        confirming: confirmLoading,
+        handleCancelHold,
+        cancelLoading,
+        
+        stats,
+        seatPrice,
+        selectionTotal,
+        hasCartItems,
+        orderTotal,
+        formattedShowtime,
+        lastRefreshLabel
     }
 }

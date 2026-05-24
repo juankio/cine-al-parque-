@@ -16,7 +16,7 @@ const emit = defineEmits<{ (e:'clear'):void }>()
     <UButton
       v-if="model"
       variant="ghost"
-      color="gray"
+      color="neutral"
       @click="model=''; emit('clear')"
     >
       Limpiar

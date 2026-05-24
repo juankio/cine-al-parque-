@@ -1,20 +1,13 @@
-// server/api/admin/ingredients/index.post.ts
 import { connectDB } from '@/server/utils/mongoose'
-import { requireAdmin } from '@/server/utils/admin'
-import { Ingredient } from '@/server/models/Ingredient'
+import { Ingredient, type IIngredient } from '@/server/models/Ingredient'
+import { readSession } from '@/server/utils/session'
 
 export default defineEventHandler(async (event) => {
-    await connectDB(); await requireAdmin(event)
-    const b = await readBody(event)
+  await connectDB()
+  const session = await readSession(event)
+  if (!session || !session.isAdmin) throw createError({ statusCode: 403 })
 
-    // Campos aceptados
-    const doc = await Ingredient.create({
-        nombre: String(b.nombre).trim(),
-        unidad: String(b.unidad || 'unid'),
-        stockBase: Number(b.stockBase || 0),
-        costoPromedio: Number(b.costoPromedio || 0),
-        activo: b.activo === undefined ? true : Boolean(b.activo)
-    })
-
-    return doc.toJSON()
+  const body = await readBody(event)
+  const item = await Ingredient.create(body) as IIngredient
+  return item
 })

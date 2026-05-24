@@ -60,7 +60,7 @@
         <UButton
           size="xs"
           variant="ghost"
-          color="gray"
+          color="neutral"
           icon="i-heroicons-trash"
           @click.stop="$emit('delete', item)"
         />

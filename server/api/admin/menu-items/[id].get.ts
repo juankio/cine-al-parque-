@@ -1,14 +1,15 @@
 import { connectDB } from '@/server/utils/mongoose'
-import { requireAdmin } from '@/server/utils/admin'
-import { MenuItem } from '@/server/models/MenuItem'
+import { MenuItem, type IMenuItem } from '@/server/models/MenuItem'
+import { readSession } from '@/server/utils/session'
 
 export default defineEventHandler(async (event) => {
-    await connectDB()
-    await requireAdmin(event)
+  await connectDB()
+  const session = await readSession(event)
+  if (!session || !session.isAdmin) throw createError({ statusCode: 403 })
 
-    const id = getRouterParam(event, 'id')
-    const doc = await MenuItem.findById(id).populate('recipeId', 'nombre').lean()
-    if (!doc) throw createError({ statusCode: 404, statusMessage: 'No encontrado' })
-
-    return { item: doc }
+  const id = getRouterParam(event, 'id')
+  const item = await MenuItem.findById(id).lean<IMenuItem>()
+  if (!item) throw createError({ statusCode: 404 })
+  
+  return item
 })

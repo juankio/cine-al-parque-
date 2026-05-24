@@ -1,28 +1,21 @@
 import { connectDB } from '@/server/utils/mongoose'
-import { requireAdmin } from '@/server/utils/admin'
-import { MenuItem } from '@/server/models/MenuItem'
-import { Recipe } from '@/server/models/Recipe'
+import { MenuItem, type IMenuItem } from '@/server/models/MenuItem'
+import { readSession } from '@/server/utils/session'
 
 export default defineEventHandler(async (event) => {
-    await connectDB()
-    await requireAdmin(event)
+  await connectDB()
+  const session = await readSession(event)
+  if (!session || !session.isAdmin) throw createError({ statusCode: 403 })
 
-    const q = getQuery(event)
-    const page = Math.max(1, Number(q.page || 1))
-    const pageSize = Math.min(100, Math.max(1, Number(q.pageSize || 20)))
-    const text = String(q.q || '').trim()
+  const query = getQuery(event)
+  const filter: any = {}
+  
+  if (query.q) filter.nombre = { $regex: String(query.q), $options: 'i' }
+  if (query.cat) filter.categoria = String(query.cat)
 
-    const filter: any = text ? { nombre: { $regex: text, $options: 'i' } } : {}
-
-    const [items, total] = await Promise.all([
-        MenuItem.find(filter)
-            .populate('recipeId', 'nombre')
-            .sort({ nombre: 1 })
-            .skip((page - 1) * pageSize)
-            .limit(pageSize)
-            .lean(),
-        MenuItem.countDocuments(filter)
-    ])
-
-    return { items, page, pageSize, total }
+  const items = await MenuItem.find(filter)
+    .sort({ nombre: 1 })
+    .lean<IMenuItem[]>()
+    
+  return items
 })

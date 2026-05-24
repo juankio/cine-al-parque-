@@ -3,7 +3,8 @@ export default defineNuxtConfig({
   srcDir: '.',
   ssr: false,
 
-  modules: ['@pinia/nuxt', '@vite-pwa/nuxt', '@nuxtjs/color-mode', '@nuxt/ui'],
+  modules: [
+    "@nuxt/eslint",'@pinia/nuxt', '@vite-pwa/nuxt', '@nuxtjs/color-mode', '@nuxt/ui'],
 
   css: ['~/assets/css/main.css'],
 
@@ -28,7 +29,17 @@ export default defineNuxtConfig({
     authSecret: process.env.AUTH_SECRET || '',
     adminEmails: process.env.NUXT_ADMIN_EMAILS || '',
     holdsTtlMinutes: process.env.HOLDS_TTL_MIN || '10',
-    public: {}
+    public: {
+      googleClientId: process.env.GOOGLE_CLIENT_ID || ''
+    }
+  },
+
+  routeRules: {
+    '/**': {
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'
+      }
+    }
   },
 
   app: {

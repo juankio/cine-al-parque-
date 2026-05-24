@@ -69,7 +69,7 @@ const mobileNavOpen = ref(false)
               <span class="text-sm font-semibold">Menú admin</span>
               <UButton
                 variant="ghost"
-                color="gray"
+                color="neutral"
                 icon="i-heroicons-x-mark"
                 aria-label="Cerrar navegación"
                 @click="mobileNavOpen = false"

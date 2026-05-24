@@ -1,127 +1,109 @@
 import { connectDB } from '@/server/utils/mongoose'
-import { Reservation } from '@/server/models/Reservation'
-import { ReservationSeat } from '@/server/models/ReservationSeat'
-import { OrderItem } from '@/server/models/OrderItem'
-import { MenuItem } from '@/server/models/MenuItem'
-import { Recipe } from '@/server/models/Recipe'
+import { readSession } from '@/server/utils/session'
+import { Reservation, type IReservation, type ICartItem } from '@/server/models/Reservation'
+import { Showtime } from '@/server/models/Showtime'
+import { MenuItem, type IMenuItem, type IMenuItemRecipe } from '@/server/models/MenuItem'
+import { Recipe, type IRecipe, type IRecipeIngredient } from '@/server/models/Recipe'
 import { Ingredient } from '@/server/models/Ingredient'
+import { InventoryLog } from '@/server/models/InventoryLog'
+import { Types } from 'mongoose'
 
 export default defineEventHandler(async (event) => {
-    await connectDB()
+  await connectDB()
+  const session = await readSession(event)
+  if (!session) {
+    throw createError({ statusCode: 401, statusMessage: 'No autenticado' })
+  }
 
-    // En productivo, valida firma/secret del proveedor (cabecera)
-    const b = await readBody<{ reservationId: string }>(event)
-    if (!b?.reservationId) throw createError({ statusCode: 400, statusMessage: 'reservationId requerido' })
+  const body = await readBody(event)
+  const reservationId = body?.reservationId
 
-    const res = await Reservation.findById(b.reservationId)
-    if (!res) throw createError({ statusCode: 404, statusMessage: 'Reserva no encontrada' })
+  if (!reservationId || !Types.ObjectId.isValid(reservationId)) {
+    throw createError({ statusCode: 400, statusMessage: 'ID de reserva inválido' })
+  }
 
-    if (res.status === 'paid') return { ok: true, alreadyPaid: true } // idempotente
-    if (res.status !== 'pending') throw createError({ statusCode: 409, statusMessage: `Estado inválido: ${res.status}` })
-    if (res.expiresAt && res.expiresAt.getTime() < Date.now()) {
-        // expiró el hold
-        res.status = 'expired'
-        await res.save()
-        // limpiar seats
-        await ReservationSeat.deleteMany({ reservationId: res._id })
-        throw createError({ statusCode: 409, statusMessage: 'Reserva expirada' })
+  const reservation = await Reservation.findById(reservationId) as IReservation | null
+  if (!reservation) {
+    throw createError({ statusCode: 404, statusMessage: 'Reserva no encontrada' })
+  }
+
+  if (reservation.userId.toString() !== session.id && !session.isAdmin) {
+    throw createError({ statusCode: 403, statusMessage: 'No autorizado' })
+  }
+
+  if (reservation.status === 'paid') {
+    return { ok: true, message: 'La reserva ya estaba pagada' }
+  }
+
+  const cartItems = reservation.cart || []
+  if (cartItems.length > 0) {
+    const menuItems = await MenuItem.find({
+      _id: { $in: cartItems.map((ci: ICartItem) => ci.menuItemId) }
+    }).lean<IMenuItem[]>()
+
+    const menuMap = new Map<string, IMenuItem>(menuItems.map((m: IMenuItem) => [m._id.toString(), m]))
+
+    const recipeIds = menuItems.flatMap((m: IMenuItem) => m.recipe?.map((r: IMenuItemRecipe) => r.ingredientId.toString()) || [])
+    const recipes = await Recipe.find({
+      _id: { $in: recipeIds }
+    }).lean<IRecipe[]>()
+    const recipeMap = new Map<string, IRecipe>(recipes.map((r: IRecipe) => [r._id.toString(), r]))
+
+    const ingredientDeltas = new Map<string, number>()
+
+    for (const cartItem of cartItems) {
+      const menuObj = menuMap.get(cartItem.menuItemId.toString())
+      if (!menuObj) continue
+
+      for (const reqRecipe of (menuObj.recipe || [])) {
+        const recipeObj = recipeMap.get(reqRecipe.ingredientId.toString())
+        if (!recipeObj) continue
+
+        const qtyNeededOfRecipe = reqRecipe.qty * cartItem.qty
+
+        for (const reqIng of (recipeObj.ingredients || [])) {
+          const ingIdStr = reqIng.ingredientId.toString()
+          const totalIngNeeded = reqIng.qtyRatio * qtyNeededOfRecipe
+          ingredientDeltas.set(ingIdStr, (ingredientDeltas.get(ingIdStr) || 0) + totalIngNeeded)
+        }
+      }
     }
 
-    // Descontar inventario según snapshot de carrito (si la receta existe)
-    // 1) agrupar consumo por ingrediente (unidad base)
-    const consumeByIngredient = new Map<string, number>()
-    if (res.cart?.length) {
-        const ids = [...new Set(res.cart.map(i => String(i.menuItemId)))]
-        const menuDocs = await MenuItem.find({ _id: { $in: ids }, activo: true }).lean()
-        const menuMap = new Map(menuDocs.map(m => [String(m._id), m]))
-
-        const recipeIds = [...new Set(menuDocs.map(m => m.recipeId).filter(Boolean).map(String))]
-        const recipes = recipeIds.length ? await Recipe.find({ _id: { $in: recipeIds } }).lean() : []
-        const recipeMap = new Map(recipes.map(r => [String(r._id), r]))
-
-        for (const ci of res.cart) {
-            const md = menuMap.get(String(ci.menuItemId))
-            if (md?.recipeId) {
-                const rec = recipeMap.get(String(md.recipeId))
-                if (rec?.items?.length) {
-                    for (const ri of rec.items as any[]) {
-                        const add = Number(ri.qtyBase) * ci.qty
-                        const k = String(ri.ingredientId)
-                        consumeByIngredient.set(k, (consumeByIngredient.get(k) || 0) + add)
-                    }
-                }
-            }
+    if (ingredientDeltas.size > 0) {
+      const ingIds = Array.from(ingredientDeltas.keys())
+      const ingredients = await Ingredient.find({ _id: { $in: ingIds } })
+      
+      for (const ing of ingredients) {
+        const needed = ingredientDeltas.get(ing._id.toString()) || 0
+        if (ing.stockBase < needed) {
+          throw createError({ 
+            statusCode: 400, 
+            statusMessage: `Stock insuficiente de ${ing.nombre}. Se necesitan ${needed}, hay ${ing.stockBase}.` 
+          })
         }
+      }
 
-        // 2) validar stock suficiente
-        if (consumeByIngredient.size) {
-            const ingIds = [...consumeByIngredient.keys()]
-            const ings = await Ingredient.find({ _id: { $in: ingIds } }).select('stockBase nombre').lean()
-            const stockMap = new Map(ings.map(x => [String(x._id), x.stockBase || 0]))
-            for (const [ingId, need] of consumeByIngredient.entries()) {
-                const have = stockMap.get(ingId) ?? 0
-                if (have < need) {
-                    throw createError({ statusCode: 409, statusMessage: `Stock insuficiente de ingrediente` })
-                }
-            }
-        }
+      for (const ing of ingredients) {
+        const needed = ingredientDeltas.get(ing._id.toString()) || 0
+        ing.stockBase -= needed
+        await ing.save()
+
+        await InventoryLog.create({
+          ingredientId: ing._id,
+          type: 'OUT',
+          qty: needed,
+          unit: ing.unidadBase,
+          cost: 0,
+          reason: `Venta POS - Reserva ${reservation._id}`,
+          userId: session.id
+        })
+      }
     }
+  }
 
-    // 3) crear OrderItems desde snapshot y descontar inventario
-    if (res.cart?.length) {
-        await OrderItem.insertMany(
-            res.cart.map(ci => ({
-                reservationId: res._id,
-                menuItemId: ci.menuItemId,
-                nombre: ci.nombre,
-                qty: ci.qty,
-                price: ci.unitPrice
-            }))
-        )
-    }
-    // OUT inventario
-    // (en futuro: persiste movimientos OUT con historial)
-    // @ts-ignore
-    if (res.cart?.length) {
-        const idsSet = new Set<string>()
-        const updates: any[] = []
-        // Recalcular el mismo consumo que arriba para no duplicar lógica:
-        // (Podrías factorizar en util si prefieres.)
-        // Para simplicidad y evitar segunda query, lo repetimos:
-        // (si optimizar, mueve a una función.)
+  reservation.status = 'paid'
+  reservation.expiresAt = undefined
+  await reservation.save()
 
-        // Volvemos a calcular consumo:
-        const ids = [...new Set(res.cart.map(i => String(i.menuItemId)))]
-        const menuDocs = await MenuItem.find({ _id: { $in: ids }, activo: true }).lean()
-        const menuMap = new Map(menuDocs.map(m => [String(m._id), m]))
-        const recipeIds = [...new Set(menuDocs.map(m => m.recipeId).filter(Boolean).map(String))]
-        const recipes = recipeIds.length ? await Recipe.find({ _id: { $in: recipeIds } }).lean() : []
-        const recipeMap = new Map(recipes.map(r => [String(r._id), r]))
-
-        const consumeMap = new Map<string, number>()
-        for (const ci of res.cart) {
-            const md = menuMap.get(String(ci.menuItemId))
-            if (!md?.recipeId) continue
-            const rec = recipeMap.get(String(md.recipeId))
-            if (!rec?.items?.length) continue
-            for (const ri of rec.items as any[]) {
-                const add = Number(ri.qtyBase) * ci.qty
-                const k = String(ri.ingredientId)
-                consumeMap.set(k, (consumeMap.get(k) || 0) + add)
-            }
-        }
-        for (const [ingId, need] of consumeMap.entries()) {
-            updates.push(Ingredient.findByIdAndUpdate(ingId, { $inc: { stockBase: -need } }))
-            idsSet.add(ingId)
-        }
-        if (updates.length) await Promise.all(updates)
-    }
-
-    // 4) actualizar estados
-    res.status = 'paid'
-    res.expiresAt = undefined
-    await res.save()
-    await ReservationSeat.updateMany({ reservationId: res._id }, { $set: { status: 'paid' } })
-
-    return { ok: true }
+  return { ok: true, message: 'Pago confirmado exitosamente' }
 })

@@ -49,7 +49,7 @@
           <UPopover :open="openIdx === idx" @update:open="onToggleOpen(idx, $event)">
             <UButton
               variant="outline"
-              color="gray"
+              color="neutral"
               class="justify-between"
               :label="selectedLabel(row.ingredientId) || 'Selecciona ingrediente…'"
               icon="i-heroicons-squares-2x2-20-solid"

@@ -21,7 +21,7 @@ defineProps<{
       :required="required"
     />
     <UButton
-      color="gray"
+      color="neutral"
       variant="link"
       size="xs"
       class="auth-field__toggle"

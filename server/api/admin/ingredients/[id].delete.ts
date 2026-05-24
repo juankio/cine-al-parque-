@@ -1,14 +1,15 @@
-// server/api/admin/ingredients/[id].delete.ts
 import { connectDB } from '@/server/utils/mongoose'
-import { requireAdmin } from '@/server/utils/admin'
 import { Ingredient } from '@/server/models/Ingredient'
+import { readSession } from '@/server/utils/session'
 
 export default defineEventHandler(async (event) => {
-    await connectDB(); await requireAdmin(event)
-    const id = getRouterParam(event, 'id')
+  await connectDB()
+  const session = await readSession(event)
+  if (!session || !session.isAdmin) throw createError({ statusCode: 403 })
 
-    const doc = await Ingredient.findByIdAndDelete(id)
-    if (!doc) throw createError({ statusCode: 404, statusMessage: 'No encontrado' })
+  const id = getRouterParam(event, 'id')
+  const deleted = await Ingredient.findByIdAndDelete(id).lean()
 
-    return { ok: true }
+  if (!deleted) throw createError({ statusCode: 404, statusMessage: 'Not found' })
+  return { ok: true }
 })

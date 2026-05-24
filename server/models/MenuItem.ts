@@ -1,45 +1,42 @@
 import pkg from 'mongoose'
 const { Schema, model, models, Types } = pkg
+import type { Document, Model, Types as MongooseTypes } from 'mongoose'
 
-const MenuExtraSchema = new Schema({
+export interface IMenuItemRecipe {
+  ingredientId: MongooseTypes.ObjectId
+  qty: number
+}
+
+export interface IMenuItem extends Document {
+  nombre: string
+  descripcion: string
+  precio: number
+  categoria: string
+  tags: string[]
+  imagenUrl: string
+  activo: boolean
+  recipe: IMenuItemRecipe[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+const MenuItemRecipeSchema = new Schema({
     ingredientId: { type: Types.ObjectId, ref: 'Ingredient', required: true },
-    qtyExtra: { type: Number, required: true, min: 0 }
+    qty: { type: Number, required: true, min: 0 }
 }, { _id: false })
 
 const MenuItemSchema = new Schema({
-    nombre: { type: String, required: true, trim: true, unique: true },
+    nombre: { type: String, required: true, trim: true },
+    descripcion: { type: String, default: '' },
     precio: { type: Number, required: true, min: 0 },
-    recipeId: { type: Types.ObjectId, ref: 'Recipe', default: null },
-    recipeIds: { type: [Types.ObjectId], ref: 'Recipe', default: [] },
-    porciones: { type: Number, default: 1, min: 1 },
-    extras: { type: [MenuExtraSchema], default: [] },
-    descripcion: { type: String, default: '', trim: true },
-    categoria: { type: String, default: '', trim: true },
+    categoria: { type: String, default: 'snack' }, 
     tags: { type: [String], default: [] },
-    activo: { type: Boolean, default: true }
+    imagenUrl: { type: String, default: '' },
+    activo: { type: Boolean, default: true },
+    recipe: { type: [MenuItemRecipeSchema], default: [] }
 }, { timestamps: true })
 
-MenuItemSchema.index({ activo: 1 })
-MenuItemSchema.index({ recipeId: 1 })
-MenuItemSchema.index({ recipeIds: 1 })
+MenuItemSchema.index({ categoria: 1 })
+MenuItemSchema.index({ nombre: 'text' })
 
-MenuItemSchema.pre('validate', function (next) {
-    if (Array.isArray(this.recipeIds) && this.recipeIds.length > 0) {
-        if (!this.recipeId) this.recipeId = this.recipeIds[0]
-    } else if (this.recipeId) {
-        this.recipeIds = [this.recipeId]
-    } else {
-        this.recipeIds = []
-        this.recipeId = null
-    }
-
-    this.tags = (this.tags || [])
-        .map((s: any) => String(s || '').trim())
-        .filter(Boolean)
-
-    if (!Array.isArray(this.extras)) this.extras = []
-
-    next()
-})
-
-export const MenuItem = models.MenuItem || model('MenuItem', MenuItemSchema)
+export const MenuItem = (models.MenuItem || model<IMenuItem>('MenuItem', MenuItemSchema)) as Model<IMenuItem>

@@ -1,17 +1,14 @@
 <script setup lang="ts">
 import { animate, createTimeline, stagger } from 'animejs'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, onBeforeUnmount } from 'vue'
 
 const props = defineProps<{ modelValue: string }>()
 const emit = defineEmits<{ (event: 'update:modelValue', value: string): void }>()
 
 const isClient = typeof window !== 'undefined'
 const heroRef = ref<HTMLElement | null>(null)
-
-// Linterna variables
 const mouseX = ref(0)
 const mouseY = ref(0)
-const isHovering = ref(false)
 
 const heroPosters = [
   'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=600&auto=format&fit=crop',
@@ -22,8 +19,9 @@ const heroPosters = [
 const handleMouseMove = (e: MouseEvent) => {
   if (!heroRef.value) return
   const rect = heroRef.value.getBoundingClientRect()
-  mouseX.value = e.clientX - rect.left
-  mouseY.value = e.clientY - rect.top
+  // Normalizar coordenadas entre -1 y 1 para el parallax
+  mouseX.value = ((e.clientX - rect.left) / rect.width) * 2 - 1
+  mouseY.value = ((e.clientY - rect.top) / rect.height) * 2 - 1
 }
 
 onMounted(() => {
@@ -61,51 +59,15 @@ function onUpdate(value: string) {
 <template>
   <section 
     ref="heroRef"
-    class="relative w-full h-[85vh] min-h-[750px] flex items-center justify-center overflow-hidden bg-background"
     @mousemove="handleMouseMove"
-    @mouseenter="isHovering = true"
-    @mouseleave="isHovering = false"
+    class="relative w-full h-[85vh] min-h-[750px] flex items-center justify-center bg-transparent"
   >
-    
-    
-    <!-- Cinema Background -->
-    <div class="absolute inset-0 z-0 bg-black">
-      <img 
-        src="https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=2670&auto=format&fit=crop" 
-        alt="Cinema Background" 
-        class="hero-bg-overlay w-full h-full object-cover opacity-20 mix-blend-screen"
-      />
-    </div>
-
-    <!-- Gradient Vignette -->
-    <div class="absolute inset-0 z-0 bg-gradient-to-t from-[#020202] via-[#020202]/60 to-transparent"></div>
-    <div class="absolute inset-0 z-0 bg-gradient-to-r from-[#020202] via-[#020202]/80 to-transparent lg:via-[#020202]/90"></div>
-
-    <!-- Linterna Effect (Sólo visible en hover) -->
-
-    <div 
-      class="absolute inset-0 z-0 pointer-events-none transition-opacity duration-500"
-      :style="{
-        opacity: isHovering ? 1 : 0,
-        background: `radial-gradient(circle 400px at ${mouseX}px ${mouseY}px, rgba(225,29,72,0.15), transparent 80%)`
-      }"
-    ></div>
-
-    <!-- Theatrical Grid Pattern -->
-    <div class="absolute inset-0 z-0 bg-[linear-gradient(to_right,#8888880a_1px,transparent_1px),linear-gradient(to_bottom,#8888880a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_50%,#000_20%,transparent_100%)]"></div>
 
     <UContainer class="relative z-10 w-full mt-12 lg:mt-24">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-center">
         
         <!-- Typography & Input (Left) -->
         <div class="lg:col-span-6 space-y-10 text-left z-20">
-          <div class="hero-el inline-flex items-center gap-3 px-5 py-2 rounded-full border border-border/50 bg-muted/30 backdrop-blur-xl shadow-lg">
-            <span class="relative flex h-3 w-3">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-            </span>
-            <span class="text-[11px] font-black uppercase tracking-[0.25em] text-foreground/90">La Experiencia Definitiva</span>
-          </div>
           
           <h1 class="hero-el text-6xl sm:text-7xl lg:text-[6rem] font-black text-foreground tracking-tighter leading-[1]">
             Cine al <br />
@@ -136,22 +98,31 @@ function onUpdate(value: string) {
         </div>
 
         <!-- Cinematic Poster Composition (Right) -->
-        <div class="hidden lg:block lg:col-span-6 relative h-[600px] w-full perspective-[1200px]">
+        <div class="hidden lg:block lg:col-span-6 relative h-[600px] w-full perspective-[1200px]" style="transform-style: preserve-3d;">
            
            <!-- Back Poster (Left) -->
-           <div class="hero-float-card absolute left-4 top-24 w-[220px] h-[320px] rounded-2xl border border-border/50 overflow-hidden shadow-2xl z-10 bg-black opacity-0">
+           <div 
+             class="hero-float-card absolute left-4 top-24 w-[220px] h-[320px] rounded-2xl border border-border/50 overflow-hidden shadow-2xl z-10 bg-black opacity-0 transition-transform duration-300 ease-out"
+             :style="{ transform: `translate3d(${mouseX * -15}px, ${mouseY * -15}px, -50px) rotateY(${mouseX * 10}deg) rotateX(${mouseY * -10}deg)` }"
+           >
              <div class="absolute inset-0 bg-black/60 dark:bg-black/40 z-10 transition-opacity hover:opacity-0"></div>
              <img :src="heroPosters[1]" class="w-full h-full object-cover grayscale-[40%] transition-transform duration-1000 hover:scale-110" />
            </div>
 
            <!-- Back Poster (Right) -->
-           <div class="hero-float-card absolute right-0 top-16 w-[200px] h-[280px] rounded-2xl border border-border/50 overflow-hidden shadow-2xl z-10 bg-black opacity-0">
+           <div 
+             class="hero-float-card absolute right-0 top-16 w-[200px] h-[280px] rounded-2xl border border-border/50 overflow-hidden shadow-2xl z-10 bg-black opacity-0 transition-transform duration-300 ease-out"
+             :style="{ transform: `translate3d(${mouseX * -25}px, ${mouseY * -25}px, -100px) rotateY(${mouseX * -15}deg) rotateX(${mouseY * 15}deg)` }"
+           >
              <div class="absolute inset-0 bg-black/70 dark:bg-black/60 z-10 transition-opacity hover:opacity-0"></div>
              <img :src="heroPosters[2]" class="w-full h-full object-cover grayscale-[60%] transition-transform duration-1000 hover:scale-110" />
            </div>
 
            <!-- Main Front Poster -->
-           <div class="hero-float-card absolute left-1/2 -translate-x-1/2 top-4 w-[300px] h-[440px] rounded-2xl border border-border/50 overflow-hidden shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)] dark:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9)] z-30 bg-black opacity-0 ring-1 ring-primary/20">
+           <div 
+             class="hero-float-card absolute left-1/2 -translate-x-1/2 top-4 w-[300px] h-[440px] rounded-2xl border border-border/50 overflow-hidden shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)] dark:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.9)] z-30 bg-black opacity-0 ring-1 ring-primary/20 transition-transform duration-200 ease-out"
+             :style="{ transform: `translate3d(${mouseX * 20}px, ${mouseY * 20}px, 50px) rotateY(${mouseX * 15}deg) rotateX(${mouseY * -15}deg)` }"
+           >
              <img :src="heroPosters[0]" class="w-full h-full object-cover opacity-90 transition-transform duration-1000 hover:scale-105" />
              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex items-end p-6">
                <div class="space-y-2 w-full">

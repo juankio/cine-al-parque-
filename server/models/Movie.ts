@@ -1,5 +1,18 @@
 import pkg from 'mongoose'
 const { Schema, model, models } = pkg
+import type { Document, Model } from 'mongoose'
+
+export interface IMovie extends Document {
+  titulo: string
+  sinopsis: string
+  poster: string
+  duracion: number
+  clasificacion: string
+  price: number
+  active: boolean
+  createdAt: Date
+  updatedAt: Date
+}
 
 const MovieSchema = new Schema({
     titulo: { type: String, required: true, trim: true },
@@ -13,4 +26,4 @@ const MovieSchema = new Schema({
 
 MovieSchema.index({ titulo: 'text' })
 
-export const Movie = models.Movie || model('Movie', MovieSchema)
+export const Movie = (models.Movie || model<IMovie>('Movie', MovieSchema)) as Model<IMovie>

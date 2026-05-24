@@ -141,7 +141,7 @@ onMounted(() => {
 
     <UAlert
       v-else-if="error"
-      color="gray"
+      color="neutral"
       variant="soft"
       icon="i-heroicons-exclamation-triangle"
       :description="error"

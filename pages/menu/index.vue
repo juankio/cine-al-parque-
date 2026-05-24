@@ -19,7 +19,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <UButton
-            color="gray"
+            color="neutral"
             variant="soft"
             :loading="loading"
             icon="i-heroicons-arrow-path"
@@ -33,7 +33,7 @@
 
     <UAlert
       v-if="error"
-      color="red"
+      color="error"
       variant="soft"
       icon="i-heroicons-exclamation-triangle"
       :description="error"

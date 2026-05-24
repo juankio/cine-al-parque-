@@ -1,12 +1,12 @@
 import { connectDB } from '@/server/utils/mongoose'
 import { readSession } from '@/server/utils/session'
-import { Showtime } from '@/server/models/Showtime'
+import { Showtime, type IShowtime } from '@/server/models/Showtime'
 import { Seat } from '@/server/models/Seat'
-import { Reservation } from '@/server/models/Reservation'
+import { Reservation, type IReservation } from '@/server/models/Reservation'
 import { ReservationSeat } from '@/server/models/ReservationSeat'
-import { MenuItem } from '@/server/models/MenuItem'
-import { Recipe } from '@/server/models/Recipe' // solo para validar existencia si quieres
-// NOTA: NO descontamos inventario aquí (hasta confirmar pago)
+import { MenuItem, type IMenuItem } from '@/server/models/MenuItem'
+import { Recipe } from '@/server/models/Recipe' 
+import type { Types } from 'mongoose'
 
 type CartItemReq = { menuItemId: string, qty: number }
 
@@ -24,16 +24,16 @@ export default defineEventHandler(async (event) => {
     }
 
     // 1) validar showtime
-    const st = await Showtime.findById(b.showtimeId).select('_id fechaHora active price').lean()
+    const st = await Showtime.findById(b.showtimeId).select('_id fechaHora active price').lean<IShowtime>()
     if (!st || !st.active) throw createError({ statusCode: 400, statusMessage: 'Showtime inválido' })
     if (new Date(st.fechaHora).getTime() < Date.now()) {
         throw createError({ statusCode: 400, statusMessage: 'Función pasada' })
     }
 
     // 2) validar layout + asientos
-    const seatDocs = await Seat.find({ showtimeId: b.showtimeId }).select('tableCode seatCode').lean()
+    const seatDocs = await Seat.find({ showtimeId: b.showtimeId }).select('tableCode seatCode').lean<any[]>()
     if (!seatDocs.length) throw createError({ statusCode: 409, statusMessage: 'Este showtime no tiene layout generado' })
-    const seatsSet = new Set(seatDocs.map(d => `${d.tableCode}-${d.seatCode}`))
+    const seatsSet = new Set(seatDocs.map((d: any) => `${d.tableCode}-${d.seatCode}`))
     for (const key of b.seats) {
         if (!seatsSet.has(key)) throw createError({ statusCode: 400, statusMessage: `Asiento inválido: ${key}` })
     }
@@ -45,8 +45,8 @@ export default defineEventHandler(async (event) => {
 
     if (reqItems.length) {
         const ids = [...new Set(reqItems.map(i => i.menuItemId))]
-        const menuDocs = await MenuItem.find({ _id: { $in: ids }, activo: true }).lean()
-        const menuMap = new Map(menuDocs.map(m => [String(m._id), m]))
+        const menuDocs = await MenuItem.find({ _id: { $in: ids }, activo: true }).lean<IMenuItem[]>()
+        const menuMap = new Map<string, IMenuItem>(menuDocs.map((m: IMenuItem) => [String(m._id), m]))
         for (const it of reqItems) {
             const md = menuMap.get(it.menuItemId)
             if (!md) throw createError({ statusCode: 400, statusMessage: 'Menu item inválido o inactivo' })
@@ -79,7 +79,7 @@ export default defineEventHandler(async (event) => {
             status: mode === 'paid' ? 'paid' : 'pending',
             expiresAt: mode === 'paid' ? undefined : expiresAt,
             cart: cartSnapshot
-        })
+        }) as IReservation
 
         // bloquear asientos (status según reservation.status)
         await ReservationSeat.insertMany(

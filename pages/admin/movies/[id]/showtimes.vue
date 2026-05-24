@@ -85,13 +85,13 @@ async function del(id: string) {
   <UContainer class="py-6 space-y-5">
     <PageHeader title="Funciones" subtitle="Crea funciones y configura el layout de sillas.">
       <template #actions>
-        <UButton to="/admin/movies" variant="outline" color="gray" size="sm">← Volver</UButton>
+        <UButton to="/admin/movies" variant="outline" color="neutral" size="sm">← Volver</UButton>
       </template>
     </PageHeader>
 
     <UAlert
       v-if="!movieId"
-      color="gray"
+      color="neutral"
       variant="soft"
       icon="i-heroicons-exclamation-triangle"
       title="Falta movieId"
@@ -106,7 +106,7 @@ async function del(id: string) {
             <UButton
               block
               variant="outline"
-              color="gray"
+              color="neutral"
               class="justify-start"
               icon="i-heroicons-calendar-days-20-solid"
               :aria-label="fechaHoraLabel || 'Fecha y hora…'"
@@ -150,7 +150,7 @@ async function del(id: string) {
 
       <UAlert
         v-else-if="error"
-        color="gray"
+        color="neutral"
         variant="soft"
         icon="i-heroicons-exclamation-triangle"
         :description="error"
@@ -184,7 +184,7 @@ async function del(id: string) {
               :to="`/showtimes/${s._id}`"
               size="sm"
               variant="outline"
-              color="gray"
+              color="neutral"
             >
               Ver público
             </UButton>
@@ -192,7 +192,7 @@ async function del(id: string) {
             <UButton
               size="sm"
               variant="ghost"
-              color="gray"
+              color="neutral"
               @click="generateLayout(s._id)"
             >
               Regenerar layout
@@ -201,7 +201,7 @@ async function del(id: string) {
             <UButton
               size="sm"
               variant="ghost"
-              color="gray"
+              color="neutral"
               @click="del(s._id)"
               icon="i-heroicons-trash"
               title="Eliminar"

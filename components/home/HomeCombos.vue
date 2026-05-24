@@ -1,5 +1,5 @@
 <template>
-  <section class="space-y-8 relative w-full px-4 sm:px-6 lg:px-8 max-w-[1800px] mx-auto">
+  <section ref="targetRef" class="space-y-8 relative w-full px-4 sm:px-6 lg:px-8 max-w-[1800px] mx-auto">
     <div class="flex items-center justify-between border-b border-border/50 pb-5">
       <h2 class="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
         <UIcon name="i-heroicons-sparkles" class="text-primary w-8 h-8" /> Combos Destacados
@@ -67,7 +67,8 @@
 
 <script setup lang="ts">
 import { animate, stagger } from 'animejs'
-import { onMounted, watch } from 'vue'
+import { onMounted, watch, ref } from 'vue'
+import { useIntersectionObserver } from '@vueuse/core'
 
 const props = defineProps<{
   loading: boolean, error: string | null, combos: { _id: string, nombre: string, precio: number, categoria?: string, tags?: string[], descripcion?: string }[]
@@ -75,13 +76,31 @@ const props = defineProps<{
 
 const emit = defineEmits<{ (e: 'refresh'): void }>()
 const isClient = typeof window !== 'undefined'
+const targetRef = ref(null)
+const hasAnimated = ref(false)
 
 const animateCards = () => {
-  if (isClient) {
-    animate('.combo-card', { opacity: [0, 1], translateY: [30, 0], delay: stagger(100), duration: 800, ease: 'outQuart' })
+  if (isClient && !hasAnimated.value) {
+    hasAnimated.value = true
+    animate('.combo-card', { opacity: [0, 1], translateY: [50, 0], scale: [0.95, 1], delay: stagger(100), duration: 1000, ease: 'outElastic(1, .8)' })
   }
 }
 
-onMounted(() => { if (!props.loading && props.combos.length) animateCards() })
-watch(() => props.loading, (n) => { if (!n && props.combos.length) setTimeout(animateCards, 50) })
+onMounted(() => {
+  if (isClient) {
+    useIntersectionObserver(targetRef, ([{ isIntersecting }]) => {
+      if (isIntersecting && !props.loading && props.combos.length) {
+        animateCards()
+      }
+    }, { threshold: 0.2 })
+  }
+})
+
+watch(() => props.loading, (n) => { 
+  if (!n && props.combos.length && hasAnimated.value) {
+    // Re-animate only if already in view and data changes
+    hasAnimated.value = false;
+    setTimeout(animateCards, 50) 
+  }
+})
 </script>

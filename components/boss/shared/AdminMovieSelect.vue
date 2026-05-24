@@ -19,7 +19,7 @@
               v-for="m in results"
               :key="m._id"
               variant="ghost"
-              color="gray"
+              color="neutral"
               class="justify-start w-full"
               @click="pick(m)"
             >

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-const { initialize } = useAuth()
-await initialize()
+const { ensureSession } = useAuth()
+await ensureSession()
 </script>
 
 <template>

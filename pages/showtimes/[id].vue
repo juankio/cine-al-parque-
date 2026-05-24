@@ -99,7 +99,7 @@ const {
       :tables="tables"
       :reserve-mode="reserveMode"
       :selected-keys="selected"
-      :showtime-id="showtimeId"
+      :showtime-id="showtimeId || undefined"
       :last-refresh-label="lastRefreshLabel"
       @refresh="fetchLayout"
       @toggle-seat="toggleSeat"

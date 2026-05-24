@@ -1,9 +1,9 @@
 import { connectDB } from '@/server/utils/mongoose'
 import { readSession } from '@/server/utils/session'
 import { decodeReservationToken } from '@/server/utils/reservationToken'
-import { Reservation } from '@/server/models/Reservation'
-import { Showtime } from '@/server/models/Showtime'
-import { Movie } from '@/server/models/Movie'
+import { Reservation, type IReservation } from '@/server/models/Reservation'
+import { Showtime, type IShowtime } from '@/server/models/Showtime'
+import { Movie, type IMovie } from '@/server/models/Movie'
 
 export default defineEventHandler(async (event) => {
   await connectDB()
@@ -24,25 +24,25 @@ export default defineEventHandler(async (event) => {
   try {
     payload = decodeReservationToken(body.token, qrSecret)
   } catch (err: any) {
-    throw createError({ statusCode: 400, statusMessage: err?.message || 'Token inv��lido' })
+    throw createError({ statusCode: 400, statusMessage: err?.message || 'Token inválido' })
   }
 
-  const TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 30 // 30 d��as
+  const TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 30 // 30 días
   if (Date.now() - payload.ts > TOKEN_TTL_MS) {
     throw createError({ statusCode: 410, statusMessage: 'Token expirado' })
   }
 
-  const reservation = await Reservation.findById(payload.rid)
+  const reservation = await Reservation.findById(payload.rid) as IReservation | null
   if (!reservation) {
     throw createError({ statusCode: 404, statusMessage: 'Reserva no encontrada' })
   }
 
   const showtime = reservation.showtimeId
-    ? await Showtime.findById(reservation.showtimeId).select('fechaHora sala movieId').lean()
+    ? await Showtime.findById(reservation.showtimeId).select('fechaHora sala movieId').lean<IShowtime>()
     : null
   const movie =
     showtime?.movieId ?
-      await Movie.findById(showtime.movieId).select('titulo poster').lean()
+      await Movie.findById(showtime.movieId).select('titulo poster').lean<IMovie>()
     : null
 
   const alreadyChecked = Boolean(reservation.checkedInAt)
@@ -75,7 +75,7 @@ export default defineEventHandler(async (event) => {
   if (!isPaid) {
     throw createError({
       statusCode: 409,
-      statusMessage: 'La reserva no est�� pagada',
+      statusMessage: 'La reserva no está pagada',
       data: response
     })
   }

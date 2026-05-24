@@ -1,61 +1,40 @@
 import { connectDB } from '@/server/utils/mongoose'
-import { requireAdmin } from '@/server/utils/admin'
-import { Recipe } from '@/server/models/Recipe'
-import { Ingredient } from '@/server/models/Ingredient'
+import { Recipe, type IRecipe } from '@/server/models/Recipe'
+import { Ingredient, type IIngredient } from '@/server/models/Ingredient'
+import { readSession } from '@/server/utils/session'
 
 export default defineEventHandler(async (event) => {
-    await connectDB(); await requireAdmin(event)
-    const q = getQuery(event)
+  await connectDB()
+  const session = await readSession(event)
+  if (!session || !session.isAdmin) throw createError({ statusCode: 403 })
 
-    const page = Math.max(1, Number(q.page || 1))
-    const pageSize = Math.min(100, Math.max(1, Number(q.pageSize || 20)))
-    const text = String(q.q || '').trim()
-    const activoQ = typeof q.activo === 'string' ? q.activo : undefined
-    const activoFilter =
-        activoQ === 'true' ? true :
-            activoQ === 'false' ? false :
-                undefined
+  const query = getQuery(event)
+  const q = query.q ? String(query.q) : ''
+  const filter = q ? { nombre: { $regex: q, $options: 'i' } } : {}
 
-    const filter: any = {}
-    if (text) filter.nombre = { $regex: text, $options: 'i' }
-    if (typeof activoFilter === 'boolean') filter.activo = activoFilter
+  const items = await Recipe.find(filter)
+    .sort({ nombre: 1 })
+    .lean<IRecipe[]>()
 
-    const [items, total] = await Promise.all([
-        Recipe.find(filter)
-            .sort({ nombre: 1 })
-            .skip((page - 1) * pageSize)
-            .limit(pageSize)
-            .lean(),
-        Recipe.countDocuments(filter)
-    ])
+  const allIngredients = await Ingredient.find().lean<IIngredient[]>()
+  const ingMap = new Map(allIngredients.map((i: IIngredient) => [String(i._id), i]))
 
-    const ingredientIds = Array.from(new Set(items.flatMap(r => (r.items || []).map((it: any) => String(it.ingredientId)))))
-    const ingredients = await Ingredient.find({ _id: { $in: ingredientIds } }).select('stockBase activo nombre unidad').lean()
-    const ingMap = new Map(ingredients.map((ing: any) => [String(ing._id), ing]))
-
-    const hydrated = items.map((recipe: any) => {
-        let available = true
-        for (const item of recipe.items || []) {
-            const ing = ingMap.get(String(item.ingredientId))
-            const qty = typeof item.qtyBase === 'number' ? item.qtyBase : Number(item.qtyBase) || 0
-            if (ing) {
-                item.ingredient = {
-                    _id: ing._id,
-                    nombre: ing.nombre,
-                    unidad: ing.unidad,
-                    activo: ing.activo,
-                    stockBase: ing.stockBase,
-                }
-            }
-            if (!ing || !ing.activo || (qty > 0 && Number(ing.stockBase ?? 0) < qty)) {
-                available = false
-                break
-            }
+  return items.map((r: IRecipe) => {
+    return {
+      _id: r._id,
+      nombre: r.nombre,
+      unidad: r.unidad,
+      activo: r.activo,
+      stockBase: r.stockBase,
+      ingredients: (r.ingredients || []).map((ri: any) => {
+        const ing = ingMap.get(String(ri.ingredientId))
+        return {
+          ingredientId: ri.ingredientId,
+          qtyRatio: ri.qtyRatio,
+          ingredientName: ing?.nombre || 'Desconocido',
+          ingredientUnit: ing?.unidad || ''
         }
-        recipe.available = available
-        if (!available) recipe.activo = false
-        return recipe
-    })
-
-    return { items: hydrated, page, pageSize, total }
+      })
+    }
+  })
 })

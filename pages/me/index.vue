@@ -117,7 +117,7 @@ const overviewCards = computed(() => ([
     <LoadingSkeleton v-if="loading" :rows="3" />
     <UAlert
       v-else-if="error"
-      color="gray"
+      color="neutral"
       variant="soft"
       icon="i-heroicons-exclamation-triangle"
       :description="error"

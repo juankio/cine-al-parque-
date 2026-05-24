@@ -36,7 +36,7 @@ const cleanupStyles = (el: HTMLElementWithStyle) => {
   el.style.removeProperty('will-change')
 }
 
-const onEnter = (el: HTMLElementWithStyle, done: () => void) => {
+const onEnter = (el: Element, done: () => void) => {
   setBaseStyles(el)
   el.style.height = '0px'
   el.style.opacity = '0'
@@ -57,7 +57,7 @@ const onEnter = (el: HTMLElementWithStyle, done: () => void) => {
   el.addEventListener('transitionend', onTransitionEnd)
 }
 
-const onLeave = (el: HTMLElementWithStyle, done: () => void) => {
+const onLeave = (el: Element, done: () => void) => {
   setBaseStyles(el)
   el.style.height = `${el.scrollHeight}px`
   el.style.opacity = '1'
