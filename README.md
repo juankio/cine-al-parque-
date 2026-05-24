@@ -58,10 +58,11 @@ El proyecto utiliza un stack moderno y fuertemente tipado:
    bun install
    ```
 
-2. Configura las variables de entorno. Crea un archivo `.env` en la raíz (puedes basarte en `.env.example` si existe):
+2. Configura las variables de entorno. Crea un archivo `.env` en la raíz:
    ```env
-   NUXT_MONGODB_URI=mongodb://localhost:27017/cine-al-parque
-   NUXT_JWT_SECRET=tu_secreto_seguro_aqui
+   MONGODB_URI=mongodb://localhost:27017/cine-al-parque
+   AUTH_SECRET=tu_secreto_seguro_aqui
+   NUXT_ADMIN_EMAILS=admin@cine.com
    GOOGLE_CLIENT_ID=tu_cliente_google_aqui
    ```
 
@@ -71,6 +72,13 @@ El proyecto utiliza un stack moderno y fuertemente tipado:
    ```
 
 El servidor estará disponible en `http://localhost:3000`.
+
+## 🧪 Pruebas y Cuentas de Demostración
+
+Si configuras el proyecto localmente, por defecto cualquier cuenta cuyo correo coincida con los declarados en `NUXT_ADMIN_EMAILS` dentro de tu archivo `.env` será tratada como administrador.
+
+- Puedes registrarte con cualquier cuenta (ej. `admin@cine.com`) y, si coincide con el `.env`, el sistema le asignará permisos administrativos automáticamente.
+- El panel administrativo se encuentra en la ruta `/admin`.
 
 ## 📁 Estructura del Proyecto
 
